@@ -1,0 +1,14 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+.env.local
+count.txt
+.env
+.nitro
+.tanstack
+.wrangler
+.output
+.vinxi
+convex/_generated
+todos.json
