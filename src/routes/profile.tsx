@@ -8,43 +8,19 @@ import {
   useMutation,
 } from 'convex/react'
 import { useQuery } from 'convex-helpers/react'
-import { AtSign, Camera, Check, FileText, Loader2, Mail, Save, User, X } from 'lucide-react'
+import { AtSign, Camera, Check, FileText, Loader2, Lock, Mail, Save, User, X } from 'lucide-react'
 
 import { api } from '@convex/_generated/api'
+import {
+  USERNAME_MIN_LENGTH,
+  isReservedUsername,
+  isValidUsernameFormat,
+} from '@convex/constants'
 import { fetchAuthQuery } from '@/lib/auth-server'
 import { authClient } from '@/lib/auth-client'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-
-// Reserved usernames that cannot be used
-const RESERVED_USERNAMES = [
-  'admin',
-  'administrator',
-  'root',
-  'system',
-  'moderator',
-  'mod',
-  'support',
-  'help',
-  'info',
-  'contact',
-  'api',
-  'www',
-  'mail',
-  'email',
-  'test',
-  'null',
-  'undefined',
-]
-
-// Check if username is reserved (case-insensitive)
-const isReservedUsername = (username: string) =>
-  RESERVED_USERNAMES.includes(username.toLowerCase())
-
-// Validate username format
-const isValidUsernameFormat = (username: string) =>
-  username.length >= 3 && username.length <= 30 && /^[a-zA-Z0-9_.]+$/.test(username)
 
 // Server function to fetch profile data during SSR
 const fetchProfileData = createServerFn({ method: 'GET' }).handler(async () => {
@@ -124,32 +100,27 @@ type PreloadedUser = {
   _id: string
   _creationTime: number
   email: string
-  username?: string | null
-  displayUsername?: string | null
-  firstName?: string
-  lastName?: string
-  fullName?: string
-  hasCustomName?: boolean
-  avatarUrl?: string | null
-  hasUploadedAvatar?: boolean
+  name: string
+  username: string | null
+  displayUsername: string | null
+  avatarUrl: string | null
+  hasUploadedAvatar: boolean
   bio?: string
-  role?: 'user' | 'admin' | 'moderator'
-  createdAt?: number
-  updatedAt?: number
+  createdAt: number
+  updatedAt: number
 } | null
 
 function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
   // Use live query for real-time updates, falling back to preloaded data
   const { data: user, isPending } = useQuery(api.users.getMe)
+  const { data: hasPassword } = useQuery(api.auth.hasPassword)
   const updateProfile = useMutation(api.users.updateProfile)
-  const clearNameMutation = useMutation(api.users.clearName)
   const generateUploadUrl = useMutation(api.users.generateAvatarUploadUrl)
   const updateAvatar = useMutation(api.users.updateAvatar)
   const deleteAvatarMutation = useMutation(api.users.deleteAvatar)
 
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [isClearingName, setIsClearingName] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -160,14 +131,29 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
   const [usernameError, setUsernameError] = useState<string | null>(null)
   const usernameCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Change password state
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [isSavingPassword, setIsSavingPassword] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  })
+  const [passwordErrors, setPasswordErrors] = useState<{
+    currentPassword?: string
+    newPassword?: string
+    confirmPassword?: string
+    general?: string
+  }>({})
+  const [passwordSuccess, setPasswordSuccess] = useState(false)
+
   // Use live data if available, otherwise use preloaded
   const currentUser = user ?? preloadedUser
   const originalUsername = currentUser?.displayUsername ?? currentUser?.username ?? ''
 
   // Form state (avatar is handled separately via file upload)
   const [formData, setFormData] = useState({
-    firstName: currentUser?.firstName ?? '',
-    lastName: currentUser?.lastName ?? '',
+    name: currentUser?.name ?? '',
     username: currentUser?.displayUsername ?? currentUser?.username ?? '',
     bio: currentUser?.bio ?? '',
   })
@@ -181,7 +167,7 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
       return
     }
 
-    if (!username || username.length < 3) {
+    if (!username || username.length < USERNAME_MIN_LENGTH) {
       setUsernameAvailable(null)
       setUsernameError(null)
       return
@@ -241,7 +227,7 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
     }
 
     // Check reserved usernames immediately
-    if (username.length >= 3 && isValidUsernameFormat(username)) {
+    if (isValidUsernameFormat(username)) {
       if (isReservedUsername(username)) {
         setUsernameAvailable(false)
         setUsernameError('This username is reserved')
@@ -266,8 +252,7 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
   // Sync form when user data changes (e.g., from preloaded to live)
   const resetForm = () => {
     setFormData({
-      firstName: currentUser?.firstName ?? '',
-      lastName: currentUser?.lastName ?? '',
+      name: currentUser?.name ?? '',
       username: currentUser?.displayUsername ?? currentUser?.username ?? '',
       bio: currentUser?.bio ?? '',
     })
@@ -311,25 +296,34 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
     setError(null)
 
     try {
-      // Update username via Better Auth if changed
+      // Update name and/or username via Better Auth if changed.
+      // Note: the Better Auth username plugin only backfills
+      // `displayUsername` from `username` on /sign-up/email, NOT on
+      // /update-user (see packages/better-auth/src/plugins/username/index.ts
+      // around line 583 — the middleware matcher is hardcoded to sign-up).
+      // So on update we have to send both fields explicitly, otherwise
+      // `username` gets the new value while `displayUsername` stays stale,
+      // which is what the UI reads for display.
       const currentUsername = currentUser.displayUsername ?? currentUser.username ?? ''
-      if (formData.username !== currentUsername) {
+      const nameChanged = formData.name !== currentUser.name
+      const usernameChanged = formData.username !== currentUsername
+      if (nameChanged || usernameChanged) {
         const result = await authClient.updateUser({
-          username: formData.username || undefined,
+          ...(nameChanged && { name: formData.name }),
+          ...(usernameChanged && {
+            username: formData.username || undefined,
+            displayUsername: formData.username || undefined,
+          }),
         })
         if (result.error) {
-          setError(result.error.message || 'Failed to update username')
+          setError(result.error.message || 'Failed to update profile')
           setIsSaving(false)
           return
         }
       }
 
-      // Update other profile fields via Convex
-      await updateProfile({
-        firstName: formData.firstName || undefined,
-        lastName: formData.lastName || undefined,
-        bio: formData.bio || undefined,
-      })
+      // Update bio via Convex
+      await updateProfile({ bio: formData.bio || undefined })
       setIsEditing(false)
       setUsernameAvailable(null)
       setUsernameError(null)
@@ -348,23 +342,6 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click()
-  }
-
-  const handleClearName = async () => {
-    if (!currentUser?.hasCustomName) return
-
-    setIsClearingName(true)
-    setError(null)
-
-    try {
-      await clearNameMutation()
-      // Clear form data too
-      setFormData((prev) => ({ ...prev, firstName: '', lastName: '' }))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to clear name')
-    } finally {
-      setIsClearingName(false)
-    }
   }
 
   const handleDeleteAvatar = async (e: React.MouseEvent) => {
@@ -432,6 +409,108 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
+    }
+  }
+
+  const openPasswordForm = () => {
+    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    setPasswordErrors({})
+    setPasswordSuccess(false)
+    setIsChangingPassword(true)
+  }
+
+  const closePasswordForm = () => {
+    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    setPasswordErrors({})
+    setIsChangingPassword(false)
+  }
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPasswordErrors({})
+    setPasswordSuccess(false)
+
+    // Client-side validation
+    const nextErrors: typeof passwordErrors = {}
+    if (!passwordForm.currentPassword) {
+      nextErrors.currentPassword = 'Current password is required'
+    }
+    if (!passwordForm.newPassword) {
+      nextErrors.newPassword = 'New password is required'
+    } else if (passwordForm.newPassword.length < 8) {
+      nextErrors.newPassword = 'Password must be at least 8 characters'
+    } else if (passwordForm.newPassword.length > 128) {
+      nextErrors.newPassword = 'Password must be 128 characters or less'
+    } else if (passwordForm.newPassword === passwordForm.currentPassword) {
+      nextErrors.newPassword = 'New password must be different from the current password'
+    }
+    if (passwordForm.confirmPassword !== passwordForm.newPassword) {
+      nextErrors.confirmPassword = 'Passwords do not match'
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setPasswordErrors(nextErrors)
+      return
+    }
+
+    setIsSavingPassword(true)
+    try {
+      const result = await authClient.changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+        // Kill any other active sessions for security after a password change.
+        revokeOtherSessions: true,
+      })
+      if (result.error) {
+        const code = result.error.code
+        if (code === 'INVALID_PASSWORD') {
+          setPasswordErrors({ currentPassword: 'Current password is incorrect' })
+        } else if (code === 'PASSWORD_TOO_SHORT') {
+          setPasswordErrors({ newPassword: 'Password is too short' })
+        } else if (code === 'PASSWORD_TOO_LONG') {
+          setPasswordErrors({ newPassword: 'Password is too long' })
+        } else if (code === 'SESSION_NOT_FRESH') {
+          setPasswordErrors({
+            general:
+              'Please sign out and sign back in to change your password.',
+          })
+        } else {
+          setPasswordErrors({
+            general: result.error.message || 'Failed to change password',
+          })
+        }
+        return
+      }
+      // Nudge Better Auth's client nanostore to refetch the session after a
+      // successful password change.
+      //
+      // `revokeOtherSessions: true` tells Better Auth to delete every session
+      // for the user and issue a fresh one. The new session cookie lands in
+      // the browser fine, but Better Auth's `/change-password` and
+      // `/revoke-other-sessions` routes are not in the `atomListeners` matcher
+      // in the core client, so the session atom never re-runs on its own.
+      // The @convex-dev/better-auth React provider subscribes to that atom
+      // to derive `sessionId`, and its `fetchAccessToken` is memoized on
+      // `sessionId`, so unless the atom fires we keep sending the old JWT to
+      // Convex and the server rejects it with AUTH_1001.
+      //
+      // Poking `$sessionSignal` is the supported way to tell the nanostore
+      // "go refetch now". Better Auth re-runs `getSession()`, the client
+      // stores publish a new session id, the Convex provider rebuilds its
+      // fetcher, and the next query mints a JWT against the fresh session.
+      // The proper fix lives upstream (add both routes to `atomListeners` and
+      // invalidate the cached token in @convex-dev/better-auth on session id
+      // change); until those land, this keeps the UX clean without a reload.
+      authClient.$store.notify('$sessionSignal')
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      setPasswordSuccess(true)
+      setIsChangingPassword(false)
+      return
+    } catch (err) {
+      setPasswordErrors({
+        general: err instanceof Error ? err.message : 'Failed to change password',
+      })
+    } finally {
+      setIsSavingPassword(false)
     }
   }
 
@@ -512,7 +591,7 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
               <Avatar className="size-24 border-2 border-border group-hover:border-primary transition-colors">
                 <AvatarImage
                   src={currentUser.avatarUrl || undefined}
-                  alt={currentUser.fullName ?? 'User avatar'}
+                  alt={currentUser.name}
                 />
                 <AvatarFallback>
                   <User size={40} className="text-muted-foreground" />
@@ -531,7 +610,7 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
             <Avatar className="size-24 border-2 border-border">
               <AvatarImage
                 src={currentUser.avatarUrl || undefined}
-                alt={currentUser.fullName ?? 'User avatar'}
+                alt={currentUser.name}
               />
               <AvatarFallback>
                 <User size={40} className="text-muted-foreground" />
@@ -555,45 +634,18 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
 
         <div className="space-y-1">
           {isEditing ? (
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={formData.firstName}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, firstName: e.target.value }))
-                }
-                placeholder="First name"
-                className="text-xl font-semibold bg-transparent border-b border-input focus:border-primary outline-none text-foreground placeholder:text-muted-foreground w-32"
-              />
-              <input
-                type="text"
-                value={formData.lastName}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, lastName: e.target.value }))
-                }
-                placeholder="Last name"
-                className="text-xl font-semibold bg-transparent border-b border-input focus:border-primary outline-none text-foreground placeholder:text-muted-foreground w-32"
-              />
-              {/* Clear name button - only show if user has custom name set */}
-              {currentUser.hasCustomName && !isClearingName && (
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="ghost"
-                  className="size-6"
-                  onClick={handleClearName}
-                  title="Clear custom name (revert to provider name)"
-                >
-                  <X className="size-3" />
-                </Button>
-              )}
-              {isClearingName && (
-                <Loader2 className="size-4 animate-spin text-muted-foreground" />
-              )}
-            </div>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
+              placeholder="Name"
+              className="text-xl font-semibold bg-transparent border-b border-input focus:border-primary outline-none text-foreground placeholder:text-muted-foreground w-full max-w-xs"
+            />
           ) : (
             <h2 className="text-xl font-semibold text-foreground">
-              {currentUser.fullName || 'No name set'}
+              {currentUser.name || 'No name set'}
             </h2>
           )}
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -646,11 +698,6 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
               </div>
             )
           )}
-          {currentUser.role && currentUser.role !== 'user' && (
-            <span className="inline-block px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full capitalize">
-              {currentUser.role}
-            </span>
-          )}
         </div>
       </div>
 
@@ -696,20 +743,149 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
               )}
             </dd>
           </div>
-          {currentUser.updatedAt && (
-            <div className="flex justify-between">
-              <dt className="text-muted-foreground">Last updated</dt>
-              <dd className="text-foreground">
-                {new Date(currentUser.updatedAt).toLocaleDateString(undefined, {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </dd>
-            </div>
-          )}
+          <div className="flex justify-between">
+            <dt className="text-muted-foreground">Last updated</dt>
+            <dd className="text-foreground">
+              {new Date(currentUser.updatedAt).toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </dd>
+          </div>
         </dl>
       </div>
+
+      {/* Security — only for users with a credential (password) account */}
+      {hasPassword && (
+        <div className="pt-6 border-t border-border">
+          <h3 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
+            <Lock size={14} />
+            Security
+          </h3>
+
+          {passwordSuccess && !isChangingPassword && (
+            <p className="text-sm text-green-600 mb-3">
+              Password changed. Other sessions have been signed out.
+            </p>
+          )}
+
+          {!isChangingPassword ? (
+            <Button variant="secondary" onClick={openPasswordForm}>
+              Change password
+            </Button>
+          ) : (
+            <form onSubmit={handleChangePassword} className="space-y-3 max-w-sm">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">
+                  Current password
+                </label>
+                <Input
+                  type="password"
+                  autoComplete="current-password"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      currentPassword: e.target.value,
+                    }))
+                  }
+                  className={
+                    passwordErrors.currentPassword ? 'border-destructive' : ''
+                  }
+                  disabled={isSavingPassword}
+                />
+                {passwordErrors.currentPassword && (
+                  <p className="text-xs text-destructive">
+                    {passwordErrors.currentPassword}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">
+                  New password
+                </label>
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  value={passwordForm.newPassword}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      newPassword: e.target.value,
+                    }))
+                  }
+                  className={
+                    passwordErrors.newPassword ? 'border-destructive' : ''
+                  }
+                  disabled={isSavingPassword}
+                />
+                {passwordErrors.newPassword && (
+                  <p className="text-xs text-destructive">
+                    {passwordErrors.newPassword}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">
+                  Confirm new password
+                </label>
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      confirmPassword: e.target.value,
+                    }))
+                  }
+                  className={
+                    passwordErrors.confirmPassword ? 'border-destructive' : ''
+                  }
+                  disabled={isSavingPassword}
+                />
+                {passwordErrors.confirmPassword && (
+                  <p className="text-xs text-destructive">
+                    {passwordErrors.confirmPassword}
+                  </p>
+                )}
+              </div>
+
+              {passwordErrors.general && (
+                <p className="text-sm text-destructive">
+                  {passwordErrors.general}
+                </p>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                Other sessions will be signed out for security.
+              </p>
+
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={closePasswordForm}
+                  disabled={isSavingPassword}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSavingPassword}>
+                  {isSavingPassword ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Save />
+                  )}
+                  Save password
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
     </div>
   )
 }
