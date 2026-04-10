@@ -2,7 +2,6 @@ import { defineConfig, loadEnv } from 'vite'
 import { devtools } from '@tanstack/devtools-vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
-import viteTsConfigPaths from 'vite-tsconfig-paths'
 import tailwindcss from '@tailwindcss/vite'
 
 // Derive CONVEX_SITE_URL from CONVEX_DEPLOYMENT (e.g., "dev:project-name" -> "https://project-name.convex.site")
@@ -19,6 +18,11 @@ const config = defineConfig(({ mode }) => {
   const siteUrl = env.SITE_URL || 'http://localhost:3000'
 
   return {
+    resolve: {
+      // Resolve TypeScript path aliases (@/* and @convex/*) natively.
+      // Replaces the vite-tsconfig-paths plugin as of Vite 8.
+      tsconfigPaths: true,
+    },
     ssr: {
       // Prevent AsyncLocalStorage context loss for these packages
       noExternal: ['@convex-dev/better-auth'],
@@ -30,16 +34,7 @@ const config = defineConfig(({ mode }) => {
       'process.env.CONVEX_SITE_URL': JSON.stringify(convexSiteUrl),
       'process.env.SITE_URL': JSON.stringify(siteUrl),
     },
-    plugins: [
-      devtools(),
-      // this is the plugin that enables path aliases
-      viteTsConfigPaths({
-        projects: ['./tsconfig.json'],
-      }),
-      tailwindcss(),
-      tanstackStart(),
-      viteReact(),
-    ],
+    plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
   }
 })
 
