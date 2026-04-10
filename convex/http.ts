@@ -1,10 +1,11 @@
 import { httpRouter } from 'convex/server'
 import { corsRouter } from 'convex-helpers/server/cors'
 import { v } from 'convex/values'
-import { httpAction, mutation } from './_generated/server'
-import { api } from './_generated/api'
+import { httpAction, internalMutation } from './_generated/server'
+import { api, internal } from './_generated/api'
 
 import { authComponent, createAuth } from './auth'
+import { resend } from './email'
 import {  consumeLimit } from './rateLimit'
 import type {RateLimitName} from './rateLimit';
 import type { Id } from './_generated/dataModel'
@@ -42,8 +43,9 @@ function getSiteUrl(): string {
  *
  * Note: Auth-related rate limiting (sign-in, sign-up, password reset) is handled
  * by Better Auth at the HTTP layer. This mutation is for non-auth API endpoints.
+ * Exposed as internalMutation since it's only called from httpActions in this file.
  */
-export const checkApiRateLimit = mutation({
+export const checkApiRateLimit = internalMutation({
   args: {
     key: v.string(),
     name: v.union(
@@ -68,8 +70,24 @@ export const checkApiRateLimit = mutation({
 // Create base HTTP router
 const http = httpRouter()
 
-// Register Better Auth routes (handles its own CORS)
-authComponent.registerRoutes(http, createAuth)
+// Register Better Auth routes lazily so Better Auth is not initialized at
+// module load. This reduces http.ts memory footprint during `convex deploy`.
+// No CORS/trustedOrigins passed — this app uses the TanStack Start proxy at
+// src/routes/api/auth/$.ts, so browser→Convex auth traffic is never cross-origin.
+authComponent.registerRoutesLazy(http, createAuth)
+
+// Resend delivery events webhook. Point your Resend dashboard webhook at
+// https://<your-project>.convex.site/resend-webhook and set
+// RESEND_WEBHOOK_SECRET on the Convex deployment for signature verification.
+// Signed events get forwarded to `onEmailEvent` (see convex/email.ts) and
+// persisted to the component's `deliveryEvents` table automatically.
+http.route({
+  path: '/resend-webhook',
+  method: 'POST',
+  handler: httpAction(async (ctx, req) => {
+    return await resend.handleResendEventWebhook(ctx, req)
+  }),
+})
 
 // CORS configuration for custom API endpoints
 const siteUrl = getSiteUrl()
@@ -167,7 +185,7 @@ cors.route({
 
     // Rate limit by client IP (handles x-forwarded-for properly)
     const ip = getClientIp(request)
-    const rateLimitResult = await ctx.runMutation(api.http.checkApiRateLimit, {
+    const rateLimitResult = await ctx.runMutation(internal.http.checkApiRateLimit, {
       key: `api:${ip}`,
       name: 'apiRead',
     })
@@ -228,7 +246,7 @@ cors.route({
 
     // Rate limit by client IP (handles x-forwarded-for properly)
     const ip = getClientIp(request)
-    const rateLimitResult = await ctx.runMutation(api.http.checkApiRateLimit, {
+    const rateLimitResult = await ctx.runMutation(internal.http.checkApiRateLimit, {
       key: `api:${ip}`,
       name: 'apiRead',
     })
