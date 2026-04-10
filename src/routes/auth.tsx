@@ -7,6 +7,12 @@ import { Camera, Check, Loader2, User, X } from "lucide-react";
 import { z } from "zod";
 
 import { api } from "@convex/_generated/api";
+import {
+  USERNAME_MAX_LENGTH,
+  USERNAME_MIN_LENGTH,
+  isReservedUsername,
+  isValidUsernameFormat,
+} from "@convex/constants";
 import { authClient } from "@/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -21,31 +27,6 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
-// Reserved usernames that cannot be used
-const RESERVED_USERNAMES = [
-  "admin",
-  "administrator",
-  "root",
-  "system",
-  "moderator",
-  "mod",
-  "support",
-  "help",
-  "info",
-  "contact",
-  "api",
-  "www",
-  "mail",
-  "email",
-  "test",
-  "null",
-  "undefined",
-];
-
-// Check if username is reserved (case-insensitive)
-const isReservedUsername = (username: string) =>
-  RESERVED_USERNAMES.includes(username.toLowerCase());
-
 // Zod schemas for form validation
 const signInEmailSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -53,7 +34,20 @@ const signInEmailSchema = z.object({
 });
 
 const signInUsernameSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters."),
+  username: z.string().min(USERNAME_MIN_LENGTH, `Username must be at least ${USERNAME_MIN_LENGTH} characters.`),
+  password: z.string().min(8, "Password must be at least 8 characters."),
+});
+
+const emailOnlySchema = z.object({
+  email: z.string().email("Please enter a valid email address."),
+});
+
+const otpSchema = z.object({
+  otp: z.string().regex(/^\d{6}$/, "Enter the 6-digit code from your email."),
+});
+
+const resetPasswordSchema = z.object({
+  otp: z.string().regex(/^\d{6}$/, "Enter the 6-digit code from your email."),
   password: z.string().min(8, "Password must be at least 8 characters."),
 });
 
@@ -62,8 +56,8 @@ const signUpSchema = z.object({
   username: z
     .string()
     .refine(
-      (val) => val === "" || (val.length >= 3 && val.length <= 30 && /^[a-zA-Z0-9_.]+$/.test(val)),
-      "Username must be 3-30 characters and can only contain letters, numbers, underscores, and dots.",
+      (val) => val === "" || isValidUsernameFormat(val),
+      `Username must be ${USERNAME_MIN_LENGTH}-${USERNAME_MAX_LENGTH} characters and can only contain letters, numbers, underscores, and dots.`,
     )
     .refine(
       (val) => val === "" || !isReservedUsername(val),
@@ -86,6 +80,14 @@ export const Route = createFileRoute("/auth")({
 });
 
 function Auth() {
+  // Phase state is lifted OUT of UnauthenticatedView because the
+  // <AuthLoading> / <Unauthenticated> boundaries from convex/react unmount
+  // their children whenever the websocket revalidates auth state (e.g. when
+  // you switch tabs and come back). That would destroy any in-progress OTP
+  // entry. Keeping phase on the route component keeps it alive across
+  // re-mounts of the unauthenticated view.
+  const [phase, setPhase] = useState<AuthPhase>({ kind: "default" });
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm space-y-4">
@@ -100,7 +102,7 @@ function Auth() {
         </Authenticated>
 
         <Unauthenticated>
-          <UnauthenticatedView />
+          <UnauthenticatedView phase={phase} setPhase={setPhase} />
         </Unauthenticated>
       </div>
     </div>
@@ -156,13 +158,13 @@ function AuthenticatedView() {
       <div className="space-y-4 text-center">
         <div className="flex justify-center">
           <Avatar className="size-16 border-2 border-border">
-            <AvatarImage src={user?.avatarUrl || undefined} alt={user?.fullName ?? "User avatar"} />
+            <AvatarImage src={user?.avatarUrl || undefined} alt={user?.name ?? "User avatar"} />
             <AvatarFallback>
               <User size={24} className="text-muted-foreground" />
             </AvatarFallback>
           </Avatar>
         </div>
-        {user?.fullName && <p className="font-medium text-foreground">{user.fullName}</p>}
+        {user?.name && <p className="font-medium text-foreground">{user.name}</p>}
         <p className="text-sm text-muted-foreground">{user?.email}</p>
 
         <div className="pt-2 space-y-2">
@@ -178,9 +180,22 @@ function AuthenticatedView() {
   );
 }
 
-function UnauthenticatedView() {
+type AuthPhase =
+  | { kind: "default" }
+  | { kind: "verify-signup"; email: string }
+  | { kind: "otp-sign-in"; email: string }
+  | { kind: "reset-request" }
+  | { kind: "reset-verify"; email: string };
+
+function UnauthenticatedView({
+  phase,
+  setPhase,
+}: {
+  phase: AuthPhase;
+  setPhase: (phase: AuthPhase) => void;
+}) {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [signInMethod, setSignInMethod] = useState<"email" | "username">("email");
+  const [signInMethod, setSignInMethod] = useState<"email" | "username" | "otp">("email");
   const [serverError, setServerError] = useState("");
 
   // Username availability state
@@ -199,13 +214,7 @@ function UnauthenticatedView() {
 
   // Check username availability with debounce
   const checkUsernameAvailability = useCallback(async (username: string) => {
-    if (!username || username.length < 3) {
-      setUsernameAvailable(null);
-      return;
-    }
-
-    // Validate format first
-    if (!/^[a-zA-Z0-9_.]+$/.test(username)) {
+    if (!username || !isValidUsernameFormat(username)) {
       setUsernameAvailable(null);
       return;
     }
@@ -240,7 +249,7 @@ function UnauthenticatedView() {
       }
 
       // Check reserved usernames immediately (no debounce needed)
-      if (username && username.length >= 3 && /^[a-zA-Z0-9_.]+$/.test(username)) {
+      if (username && isValidUsernameFormat(username)) {
         if (isReservedUsername(username)) {
           setUsernameAvailable(false);
           return;
@@ -279,10 +288,48 @@ function UnauthenticatedView() {
           password: value.password,
         });
         if (result.error) {
+          // Unverified account: email OTP is auto-sent on sign-up. Resend and
+          // route the user to the verification step. Better Auth's
+          // `emailVerification.autoSignInAfterVerification` flag handles the
+          // actual sign-in inside verifyEmail, so we don't need to track the
+          // password here.
+          if (result.error.code === "EMAIL_NOT_VERIFIED") {
+            await authClient.emailOtp.sendVerificationOtp({
+              email: value.email,
+              type: "email-verification",
+            });
+            setPhase({ kind: "verify-signup", email: value.email });
+            return;
+          }
           setServerError(result.error.message || "Sign in failed");
         }
       } catch {
         setServerError("An error occurred during sign in");
+      }
+    },
+  });
+
+  const signInOtpEmailForm = useForm({
+    defaultValues: {
+      email: "",
+    },
+    validators: {
+      onSubmit: emailOnlySchema,
+    },
+    onSubmit: async ({ value }) => {
+      setServerError("");
+      try {
+        const result = await authClient.emailOtp.sendVerificationOtp({
+          email: value.email,
+          type: "sign-in",
+        });
+        if (result.error) {
+          setServerError(result.error.message || "Could not send code");
+          return;
+        }
+        setPhase({ kind: "otp-sign-in", email: value.email });
+      } catch {
+        setServerError("An error occurred while sending the code");
       }
     },
   });
@@ -336,29 +383,30 @@ function UnauthenticatedView() {
           return;
         }
 
-        // If sign-up succeeded and user selected an avatar, upload it
+        // If sign-up succeeded and user selected an avatar, upload it.
+        // Avatar upload is best-effort so the account still works even on failure.
         if (avatarFile) {
           try {
-            // Get upload URL
             const uploadUrl = await generateUploadUrl();
-
-            // Upload the file
             const uploadResult = await fetch(uploadUrl, {
               method: "POST",
               headers: { "Content-Type": avatarFile.type },
               body: avatarFile,
             });
-
             if (uploadResult.ok) {
               const { storageId } = await uploadResult.json();
-              // Update the user's avatar
               await updateAvatar({ storageId });
             }
           } catch {
-            // Avatar upload failed, but sign-up succeeded - don't block
             console.error("Failed to upload avatar during sign-up");
           }
         }
+
+        // sendVerificationOnSignUp=true on the server already emailed an OTP.
+        // Route the user to the verification step. Once they enter the OTP,
+        // `emailVerification.autoSignInAfterVerification` on the server signs
+        // them in automatically — no password stash required here.
+        setPhase({ kind: "verify-signup", email: value.email });
       } catch {
         setServerError("An error occurred during sign up");
       }
@@ -368,7 +416,9 @@ function UnauthenticatedView() {
   // Get the active form based on mode and sign-in method
   const getActiveForm = () => {
     if (mode === "signup") return signUpForm;
-    return signInMethod === "email" ? signInEmailForm : signInUsernameForm;
+    if (signInMethod === "email") return signInEmailForm;
+    if (signInMethod === "username") return signInUsernameForm;
+    return signInOtpEmailForm;
   };
   const form = getActiveForm();
 
@@ -420,10 +470,25 @@ function UnauthenticatedView() {
   };
 
   // Handle sign-in method change
-  const handleSignInMethodChange = (method: "email" | "username") => {
+  const handleSignInMethodChange = (method: "email" | "username" | "otp") => {
     setSignInMethod(method);
     setServerError("");
   };
+
+  if (phase.kind !== "default") {
+    return (
+      <OTPFlows
+        phase={phase}
+        setPhase={setPhase}
+        resetToSignIn={() => {
+          setPhase({ kind: "default" });
+          setMode("signin");
+          setSignInMethod("email");
+          setServerError("");
+        }}
+      />
+    );
+  }
 
   return (
     <form
@@ -539,8 +604,7 @@ function UnauthenticatedView() {
                 name="username"
                 children={(field) => {
                   const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                  const showAvailability =
-                    field.state.value.length >= 3 && /^[a-zA-Z0-9_.]+$/.test(field.state.value);
+                  const showAvailability = isValidUsernameFormat(field.state.value);
                   return (
                     <Field data-invalid={isInvalid || usernameAvailable === false}>
                       <FieldLabel htmlFor={field.name}>Username (optional)</FieldLabel>
@@ -607,9 +671,16 @@ function UnauthenticatedView() {
                 >
                   Username
                 </button>
+                <button
+                  type="button"
+                  onClick={() => handleSignInMethodChange("otp")}
+                  className={`flex-1 py-1.5 text-xs transition-colors ${signInMethod === "otp" ? "bg-muted text-foreground" : "bg-background text-muted-foreground hover:bg-accent"}`}
+                >
+                  Email OTP
+                </button>
               </div>
 
-              {signInMethod === "email" ? (
+              {signInMethod === "email" && (
                 <>
                   <signInEmailForm.Field
                     name="email"
@@ -658,8 +729,50 @@ function UnauthenticatedView() {
                       );
                     }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setServerError("");
+                      setPhase({ kind: "reset-request" });
+                    }}
+                    className="text-xs text-muted-foreground hover:text-foreground self-start -mt-2"
+                  >
+                    Forgot password?
+                  </button>
                 </>
-              ) : (
+              )}
+              {signInMethod === "otp" && (
+                <>
+                  <signInOtpEmailForm.Field
+                    name="email"
+                    children={(field) => {
+                      const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                      return (
+                        <Field data-invalid={isInvalid || !!serverError}>
+                          <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                          <Input
+                            id={field.name}
+                            name={field.name}
+                            type="email"
+                            value={field.state.value}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            aria-invalid={isInvalid || !!serverError}
+                            placeholder="you@example.com"
+                            autoComplete="email"
+                          />
+                          <FieldDescription>
+                            We'll email you a 6-digit code. No password needed.
+                          </FieldDescription>
+                          {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                          {serverError && <FieldError>{serverError}</FieldError>}
+                        </Field>
+                      );
+                    }}
+                  />
+                </>
+              )}
+              {signInMethod === "username" && (
                 <>
                   <signInUsernameForm.Field
                     name="username"
@@ -767,10 +880,340 @@ function UnauthenticatedView() {
             selector={(state) => state.isSubmitting}
             children={(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting} className="w-full">
-                {isSubmitting ? "Loading..." : mode === "signin" ? "Sign In" : "Create Account"}
+                {isSubmitting
+                  ? "Loading..."
+                  : mode === "signup"
+                    ? "Create Account"
+                    : signInMethod === "otp"
+                      ? "Send code"
+                      : "Sign In"}
               </Button>
             )}
           />
+        </FieldGroup>
+      </FieldSet>
+    </form>
+  );
+}
+
+function OTPFlows({
+  phase,
+  setPhase,
+  resetToSignIn,
+}: {
+  phase: Exclude<AuthPhase, { kind: "default" }>;
+  setPhase: (phase: AuthPhase) => void;
+  resetToSignIn: () => void;
+}) {
+  const [serverError, setServerError] = useState("");
+  const [info, setInfo] = useState("");
+
+  const otpForm = useForm({
+    defaultValues: { otp: "" },
+    validators: { onSubmit: otpSchema },
+    onSubmit: async ({ value }) => {
+      setServerError("");
+      setInfo("");
+      try {
+        if (phase.kind === "verify-signup") {
+          const result = await authClient.emailOtp.verifyEmail({
+            email: phase.email,
+            otp: value.otp,
+          });
+          if (result.error) {
+            setServerError(result.error.message || "Verification failed");
+            return;
+          }
+          // `emailVerification.autoSignInAfterVerification: true` on the
+          // server makes verifyEmail create a session + set the cookie
+          // inline. The <Authenticated> boundary in Auth() will swap the
+          // view to AuthenticatedView as soon as the session propagates.
+          // Nothing else to do on the client.
+          return;
+        }
+        if (phase.kind === "otp-sign-in") {
+          const result = await authClient.signIn.emailOtp({
+            email: phase.email,
+            otp: value.otp,
+          });
+          if (result.error) {
+            setServerError(result.error.message || "Sign in failed");
+          }
+          return;
+        }
+      } catch {
+        setServerError("An error occurred. Please try again.");
+      }
+    },
+  });
+
+  const emailForm = useForm({
+    defaultValues: { email: "" },
+    validators: { onSubmit: emailOnlySchema },
+    onSubmit: async ({ value }) => {
+      setServerError("");
+      setInfo("");
+      try {
+        const result = await authClient.emailOtp.requestPasswordReset({
+          email: value.email,
+        });
+        if (result.error) {
+          setServerError(result.error.message || "Could not send reset code");
+          return;
+        }
+        setPhase({ kind: "reset-verify", email: value.email });
+      } catch {
+        setServerError("An error occurred. Please try again.");
+      }
+    },
+  });
+
+  const resetForm = useForm({
+    defaultValues: { otp: "", password: "" },
+    validators: { onSubmit: resetPasswordSchema },
+    onSubmit: async ({ value }) => {
+      if (phase.kind !== "reset-verify") return;
+      setServerError("");
+      setInfo("");
+      try {
+        const result = await authClient.emailOtp.resetPassword({
+          email: phase.email,
+          otp: value.otp,
+          password: value.password,
+        });
+        if (result.error) {
+          setServerError(result.error.message || "Reset failed");
+          return;
+        }
+        setInfo("Password updated. Sign in with your new password.");
+        resetToSignIn();
+      } catch {
+        setServerError("An error occurred. Please try again.");
+      }
+    },
+  });
+
+  const resendOtp = async (type: "sign-in" | "email-verification" | "forget-password") => {
+    if (phase.kind === "reset-request") return;
+    setServerError("");
+    setInfo("");
+    try {
+      if (type === "forget-password") {
+        await authClient.emailOtp.requestPasswordReset({ email: phase.email });
+      } else {
+        await authClient.emailOtp.sendVerificationOtp({
+          email: phase.email,
+          type,
+        });
+      }
+      setInfo("New code sent. Check your inbox.");
+    } catch {
+      setServerError("Could not send a new code. Try again.");
+    }
+  };
+
+  if (phase.kind === "reset-request") {
+    return (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          emailForm.handleSubmit();
+        }}
+      >
+        <FieldSet>
+          <FieldLegend>Reset your password</FieldLegend>
+          <FieldDescription>
+            Enter your email and we'll send you a 6-digit code.
+          </FieldDescription>
+          <FieldGroup>
+            <emailForm.Field
+              name="email"
+              children={(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid || !!serverError}>
+                    <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="email"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid || !!serverError}
+                      placeholder="you@example.com"
+                      autoComplete="email"
+                    />
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {serverError && <FieldError>{serverError}</FieldError>}
+                  </Field>
+                );
+              }}
+            />
+            <emailForm.Subscribe
+              selector={(state) => state.isSubmitting}
+              children={(isSubmitting) => (
+                <Button type="submit" disabled={isSubmitting} className="w-full">
+                  {isSubmitting ? "Loading..." : "Send reset code"}
+                </Button>
+              )}
+            />
+            <Button type="button" variant="ghost" onClick={resetToSignIn}>
+              Back to sign in
+            </Button>
+          </FieldGroup>
+        </FieldSet>
+      </form>
+    );
+  }
+
+  if (phase.kind === "reset-verify") {
+    return (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          resetForm.handleSubmit();
+        }}
+      >
+        <FieldSet>
+          <FieldLegend>Enter reset code</FieldLegend>
+          <FieldDescription>
+            We sent a 6-digit code to <strong>{phase.email}</strong>.
+          </FieldDescription>
+          <FieldGroup>
+            <resetForm.Field
+              name="otp"
+              children={(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Verification code</FieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                      placeholder="123456"
+                    />
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                );
+              }}
+            />
+            <resetForm.Field
+              name="password"
+              children={(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid || !!serverError}>
+                    <FieldLabel htmlFor={field.name}>New password</FieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="password"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid || !!serverError}
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                    />
+                    <FieldDescription>Must be at least 8 characters.</FieldDescription>
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {serverError && <FieldError>{serverError}</FieldError>}
+                    {info && <FieldDescription>{info}</FieldDescription>}
+                  </Field>
+                );
+              }}
+            />
+            <resetForm.Subscribe
+              selector={(state) => state.isSubmitting}
+              children={(isSubmitting) => (
+                <Button type="submit" disabled={isSubmitting} className="w-full">
+                  {isSubmitting ? "Loading..." : "Reset password"}
+                </Button>
+              )}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => resendOtp("forget-password")}
+            >
+              Resend code
+            </Button>
+            <Button type="button" variant="ghost" onClick={resetToSignIn}>
+              Back to sign in
+            </Button>
+          </FieldGroup>
+        </FieldSet>
+      </form>
+    );
+  }
+
+  // verify-signup or otp-sign-in
+  const isVerifySignup = phase.kind === "verify-signup";
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        otpForm.handleSubmit();
+      }}
+    >
+      <FieldSet>
+        <FieldLegend>{isVerifySignup ? "Verify your email" : "Enter sign-in code"}</FieldLegend>
+        <FieldDescription>
+          We sent a 6-digit code to <strong>{phase.email}</strong>.
+        </FieldDescription>
+        <FieldGroup>
+          <otpForm.Field
+            name="otp"
+            children={(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid || !!serverError}>
+                  <FieldLabel htmlFor={field.name}>Verification code</FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    aria-invalid={isInvalid || !!serverError}
+                    placeholder="123456"
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  {serverError && <FieldError>{serverError}</FieldError>}
+                  {info && <FieldDescription>{info}</FieldDescription>}
+                </Field>
+              );
+            }}
+          />
+          <otpForm.Subscribe
+            selector={(state) => state.isSubmitting}
+            children={(isSubmitting) => (
+              <Button type="submit" disabled={isSubmitting} className="w-full">
+                {isSubmitting ? "Loading..." : isVerifySignup ? "Verify email" : "Sign in"}
+              </Button>
+            )}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => resendOtp(isVerifySignup ? "email-verification" : "sign-in")}
+          >
+            Resend code
+          </Button>
+          <Button type="button" variant="ghost" onClick={resetToSignIn}>
+            Back to sign in
+          </Button>
         </FieldGroup>
       </FieldSet>
     </form>

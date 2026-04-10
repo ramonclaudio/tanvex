@@ -6,7 +6,7 @@ export const Route = createFileRoute('/')({ component: Home })
 
 function Home() {
   const { data: user } = useQuery(api.users.getMe)
-  const firstName = user?.firstName
+  const firstName = user?.name.split(' ')[0]
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
