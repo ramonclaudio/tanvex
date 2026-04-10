@@ -80,15 +80,15 @@ function AuthenticatedNavUser() {
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage
                   src={user?.avatarUrl || undefined}
-                  alt={user?.fullName ?? 'User'}
+                  alt={user?.name ?? 'User'}
                 />
                 <AvatarFallback className="rounded-lg">
-                  {getInitials(user?.fullName, user?.email)}
+                  {getInitials(user?.name, user?.email)}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">
-                  {user?.fullName ?? 'User'}
+                  {user?.name ?? 'User'}
                 </span>
                 <span className="truncate text-xs">{user?.email}</span>
               </div>
@@ -106,15 +106,15 @@ function AuthenticatedNavUser() {
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage
                     src={user?.avatarUrl || undefined}
-                    alt={user?.fullName ?? 'User'}
+                    alt={user?.name ?? 'User'}
                   />
                   <AvatarFallback className="rounded-lg">
-                    {getInitials(user?.fullName, user?.email)}
+                    {getInitials(user?.name, user?.email)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">
-                    {user?.fullName ?? 'User'}
+                    {user?.name ?? 'User'}
                   </span>
                   <span className="truncate text-xs">{user?.email}</span>
                 </div>

@@ -1,373 +1,235 @@
-# tanstack-convex-starter
+# tanvex
 
-Full-stack starter with TanStack Start, Convex, and Better Auth. Includes authentication (email/password + username), user profiles with avatar uploads, row-level security, role-based access control, rate limiting, audit logging, and SSR.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/ramonclaudio/tanvex?style=flat)](https://github.com/ramonclaudio/tanvex)
+[![Last commit](https://img.shields.io/github/last-commit/ramonclaudio/tanvex)](https://github.com/ramonclaudio/tanvex)
+
+Full-stack TypeScript starter with TanStack Start, Convex, Better Auth, and shadcn/ui. SSR authentication, email OTP via Resend, user profiles with avatar uploads, rate limiting, and one-command setup.
+
+Every time I start a new web project I pretty much reach for the same stack. And every time I end up re-wiring SSR auth, Resend for OTP emails, rate limits, and the profile screen that nobody actually wants to build. So I turned it into a starter I can clone and be running in one command.
+
+Email/password + username auth with OTP verification. User profiles with avatar uploads to Convex storage. Rate limits. Transactional email through Resend. Full SSR. A `bun run setup` that wipes state, connects Convex, writes every env var, and drops you into `bun run dev` ready to sign up.
 
 ## Prerequisites
 
-- [Bun](https://bun.sh) runtime
-- [Convex](https://convex.dev) account (for cloud backend) or Docker (for local backend)
+Three things, all free for development.
+
+`bun`. Install it.
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
+A [Convex](https://convex.dev) account for the backend (database, functions, file storage, real-time). Free tier is fine. The setup script logs you in on first run. If you'd rather skip the cloud, install [Docker](https://docs.docker.com/get-docker/) and pass `--local`.
+
+A [Resend](https://resend.com) API key for OTP emails. Grab one at [resend.com/api-keys](https://resend.com/api-keys), it starts with `re_`. Free tier is 3,000/month. Without it, auth breaks at runtime.
 
 ## Quick Start
 
 ```bash
-bun install
-bun run setup        # connects to Convex, generates .env.local, sets secrets
-bun run dev          # starts dev server on http://localhost:3000
+bun run setup    # wipes, reinstalls, walks you through Convex + Resend
+bun run dev      # dev server on http://localhost:3000
 ```
 
-> [!TIP]
-> For local Convex backend, run `bun run setup:local` instead, then keep `bunx convex dev --local` running in a separate terminal.
+Open [http://localhost:3000](http://localhost:3000), click **Sign up**, (use a real email for security purposes) you'll get an OTP from Resend.
 
-The setup script handles everything automatically:
+For a local Convex backend via Docker:
 
-1. Runs `convex dev --once` to create/connect the Convex project
-2. Writes `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL` to `.env.local`
-3. Derives and adds `VITE_CONVEX_SITE_URL` from the deployment name
-4. Generates a `BETTER_AUTH_SECRET` and sets it via `convex env set`
-5. Sets `SITE_URL=http://localhost:3000` via `convex env set`
+```bash
+bun run setup --local
+bunx convex dev --local    # keep this running in another terminal
+```
+
+## What `bun run setup` Does
+
+One command, fresh clone to running app. Same command for full reset.
+
+1. Wipes `node_modules`, `bun.lock`, build outputs (`dist`, `.output`, `.nitro`), caches (`.tanstack`, `.vite`, `.cache`), and generated files (`convex/_generated`, `src/routeTree.gen.ts`).
+2. Runs `bun install`.
+3. Runs `bunx convex dev --once`: opens browser login on first run, creates or picks a Convex project, writes `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL` to `.env.local`, pushes `convex/` and regenerates types.
+4. Adds `VITE_CONVEX_SITE_URL` to `.env.local`.
+5. Sets `SITE_URL` and `BETTER_AUTH_SECRET` (auto-generated 32-byte base64, equivalent to `openssl rand -base64 32`) on the Convex deployment.
+6. Prompts for `RESEND_API_KEY`, `EMAIL_FROM` (defaults to `App <onboarding@resend.dev>`), `APP_NAME`, and optional `RESEND_WEBHOOK_SECRET`.
+
+Re-running setup does not rotate existing Convex env vars. For one-off changes use `bunx convex env set NAME VALUE` directly.
+
+Flags: `--local` (Docker Convex), `--no-resend` (skip email prompts), `--version`, `--help`.
+
+## Resend Webhook (Optional)
+
+The webhook ships Resend delivery events (`delivered`, `bounced`, `complained`) back to Convex so you can see when mail fails. Auth works without it, you just have no visibility.
+
+1. Run `bun run setup` first so the Convex project exists. You'll get a URL like `https://<project>.convex.site`.
+2. Skip the `RESEND_WEBHOOK_SECRET` prompt (leave blank).
+3. Go to [resend.com/webhooks](https://resend.com/webhooks), point a new webhook at `https://<project>.convex.site/resend-webhook`.
+4. Copy the signing secret Resend shows you once.
+5. Set it: `bunx convex env set RESEND_WEBHOOK_SECRET <secret>`
+
+## Sending to Real Email Addresses
+
+By default `RESEND_TEST_MODE=true`, which restricts Resend to `@resend.dev` addresses. Fine for testing. To send to real inboxes, verify a domain at [resend.com/domains](https://resend.com/domains), then:
+
+```bash
+bunx convex env set EMAIL_FROM "Your App <noreply@yourdomain.com>"
+bunx convex env set RESEND_TEST_MODE false
+```
+
+## Resetting
+
+`bun run setup` wipes and reconfigures from scratch. `bun run cleanup` nukes `node_modules`, lockfile, build artifacts, and reinstalls, leaving env config alone. Single env var change? `bunx convex env set NAME VALUE` or edit `.env.local` directly.
 
 ## Environment Variables
 
-### Local Development (`.env.local` — auto-generated by setup)
+`bun run setup` writes all of these for you. Two reference templates ship with the repo: [`.env.local.example`](.env.local.example) (Vite, read from repo root) and [`.env.convex.example`](.env.convex.example) (Convex deployment).
 
-| Variable | Source | Example |
-| --- | --- | --- |
-| `CONVEX_DEPLOYMENT` | `convex dev --once` | `dev:your-project-name` |
-| `VITE_CONVEX_URL` | `convex dev --once` | `https://your-project-name.convex.cloud` |
-| `VITE_CONVEX_SITE_URL` | Setup script | `https://your-project-name.convex.site` |
+### Local (`.env.local`)
 
-### Convex Dashboard / CLI (server-side secrets)
+| Variable | Source |
+| --- | --- |
+| `CONVEX_DEPLOYMENT` | `convex dev --once` |
+| `VITE_CONVEX_URL` | `convex dev --once` |
+| `VITE_CONVEX_SITE_URL` | setup script |
 
-| Variable | Purpose | Set By |
-| --- | --- | --- |
-| `SITE_URL` | App base URL, used for CORS and auth redirects | Setup script (`http://localhost:3000`) |
-| `BETTER_AUTH_SECRET` | 32-byte base64 secret for signing auth tokens | Setup script (auto-generated) |
+### Convex deployment
 
-> [!NOTE]
-> These server-side secrets are stored in the Convex deployment, not in `.env.local`. View or change them via the [Convex Dashboard](https://dashboard.convex.dev) or `bunx convex env` commands.
+| Variable | Purpose | Required |
+| --- | --- | :---: |
+| `SITE_URL` | app base URL, CORS, Better Auth redirects | yes |
+| `BETTER_AUTH_SECRET` | 32-byte base64 for signing cookies and JWTs | yes |
+| `RESEND_API_KEY` | `re_...` from Resend | yes |
+| `EMAIL_FROM` | `From:` header for auth mail | yes |
+| `APP_NAME` | brand name in email subjects | yes |
+| `RESEND_TEST_MODE` | `true` restricts sends to `@resend.dev` | optional |
+| `RESEND_WEBHOOK_SECRET` | signing secret for `/resend-webhook` | optional |
 
 ### Production
 
-> [!IMPORTANT]
-> You must set environment variables in **both** your hosting provider and the Convex Dashboard for production deployments.
-
-Set in your **hosting provider** (Vercel, Netlify, etc.):
+Set in your host (Vercel, Netlify, whatever):
 
 ```bash
 CONVEX_DEPLOYMENT=prod:your-project-name
 SITE_URL=https://your-app.vercel.app
 ```
 
-Set in **Convex Dashboard** (or via CLI):
+Set on the Convex prod deployment:
 
 ```bash
 bunx convex env set SITE_URL https://your-app.vercel.app --prod
 bunx convex env set BETTER_AUTH_SECRET $(openssl rand -base64 32) --prod
+bunx convex env set RESEND_API_KEY re_your_production_key --prod
+bunx convex env set EMAIL_FROM "Your App <noreply@yourdomain.com>" --prod
+bunx convex env set APP_NAME "Your App" --prod
+bunx convex env set RESEND_TEST_MODE false --prod
 ```
-
-<details>
-<summary>Vite config — how env vars are bridged to client and server</summary>
-
-`vite.config.ts` makes these available on both client and server via `process.env.*`:
-
-- `VITE_CONVEX_URL` — Convex API endpoint
-- `VITE_CONVEX_SITE_URL` — Convex site URL (auto-derived from `CONVEX_DEPLOYMENT` if not set)
-- `CONVEX_SITE_URL` — alias for server-side access
-- `SITE_URL` — app base URL (defaults to `http://localhost:3000`)
-
-</details>
 
 ## Stack
 
-**Frontend:**
+Frontend: [TanStack Start](https://tanstack.com/start) (SSR), [TanStack Router](https://tanstack.com/router), [TanStack Query](https://tanstack.com/query), [TanStack Form](https://tanstack.com/form), React 19, [Tailwind v4](https://tailwindcss.com) (OKLch), [shadcn/ui](https://ui.shadcn.com), [Zod v4](https://zod.dev).
 
-- [TanStack Start](https://tanstack.com/start) — full-stack React framework with SSR
-- [TanStack Router](https://tanstack.com/router) — file-based, type-safe routing
-- [TanStack Query](https://tanstack.com/query) — data fetching, caching, SSR query integration
-- [TanStack Form](https://tanstack.com/form) — form state management with Zod validation
-- [React 19](https://react.dev) — UI library
-- [Tailwind CSS v4](https://tailwindcss.com) — utility-first styling (OKLch color space)
-- [shadcn/ui](https://ui.shadcn.com) — Radix-based component library (new-york style, zinc base)
-- [Lucide React](https://lucide.dev) — icon library
-- [Zod](https://zod.dev) — schema validation (v4)
-
-**Backend:**
-
-- [Convex](https://convex.dev) — real-time backend (database, serverless functions, file storage)
-- [Better Auth](https://better-auth.com) — authentication via `@convex-dev/better-auth`
-- [convex-helpers](https://github.com/get-convex/convex-helpers) — RLS, triggers, migrations, custom functions, relationships
-- [@convex-dev/rate-limiter](https://github.com/get-convex/rate-limiter) — token bucket & fixed window rate limiting
-
-## Project Structure
-
-<details>
-<summary>Expand full project tree</summary>
-
-```text
-├── src/
-│   ├── components/
-│   │   ├── ui/                    # shadcn/ui primitives (avatar, button, dropdown, sidebar, etc.)
-│   │   ├── app-sidebar.tsx        # Main app sidebar (logo, nav, user menu)
-│   │   ├── mode-toggle.tsx        # Light/dark/system theme switcher
-│   │   ├── nav-main.tsx           # Primary nav items (collapsible)
-│   │   ├── nav-secondary.tsx      # Secondary nav items (flat)
-│   │   ├── nav-user.tsx           # User auth status + sign out
-│   │   ├── site-header.tsx        # Alternative header component
-│   │   └── theme-provider.tsx     # Theme context (localStorage, system detection, flash prevention)
-│   ├── hooks/
-│   │   └── use-mobile.ts          # Mobile breakpoint detection (768px)
-│   ├── lib/
-│   │   ├── auth-client.ts         # Better Auth client (convex + username plugins)
-│   │   ├── auth-server.ts         # Server-side auth (token management, SSR helpers)
-│   │   ├── convex-cache.tsx       # ConvexQueryCacheProvider wrapper (5min expiry, 250 max entries)
-│   │   └── utils.ts               # cn() — clsx + tailwind-merge
-│   ├── routes/
-│   │   ├── __root.tsx             # Root layout (providers, sidebar, SSR auth token)
-│   │   ├── index.tsx              # Home page (personalized greeting)
-│   │   ├── auth.tsx               # Sign in / sign up (email, username, avatar upload)
-│   │   ├── profile.tsx            # User profile (edit name, username, bio, avatar)
-│   │   ├── $.tsx                  # 404 catch-all
-│   │   └── api/auth/$.ts          # Better Auth API handler (GET/POST)
-│   ├── router.tsx                 # TanStack Router config + Convex QueryClient
-│   ├── routeTree.gen.ts           # Auto-generated route tree (do not edit)
-│   └── styles.css                 # Global styles + CSS variables (OKLch light/dark themes)
-├── convex/
-│   ├── _generated/                # Auto-generated types & API (do not edit)
-│   ├── schema.ts                  # Database schema (users, auditLogs, migrations)
-│   ├── auth.ts                    # Better Auth integration + user helpers
-│   ├── auth.config.ts             # Auth provider configuration
-│   ├── authMutations.ts           # Auth mutations (password, email, sessions, delete account)
-│   ├── convex.config.ts           # App config (betterAuth + rateLimiter components)
-│   ├── errors.ts                  # Structured error codes & factory functions
-│   ├── functions.ts               # Custom function wrappers (authQuery, authMutation, RLS, RBAC)
-│   ├── helpers.ts                 # Re-exports from convex-helpers (relationships, utilities)
-│   ├── http.ts                    # HTTP endpoints (/api/health, /api/users) with CORS
-│   ├── migrations.ts              # Database migrations (addDefaultRole, backfillTimestamps)
-│   ├── pagination.ts              # Cursor-based pagination helpers
-│   ├── rateLimit.ts               # Rate limiter config (apiRead, apiWrite, userAction, criticalAction)
-│   ├── security.ts                # Row-level security rules + RBAC wrappers
-│   ├── testing.ts                 # Test utilities (mock users, assertions)
-│   ├── triggers.ts                # Database triggers (audit logging on user changes)
-│   ├── users.ts                   # User CRUD (getMe, getUser, updateProfile, avatar management)
-│   ├── validators.ts              # Centralized validators (pagination, profiles)
-│   ├── zodFunctions.ts            # Zod-validated function builders
-│   └── tsconfig.json              # Convex TypeScript config
-├── scripts/
-│   └── setup.ts                   # Project setup automation
-├── public/
-│   └── favicon.ico                # Static favicon
-├── package.json
-├── tsconfig.json                  # Path aliases: @/* → src/*, @convex/* → convex/*
-├── vite.config.ts                 # SSR config, env vars, plugins
-├── eslint.config.js               # @tanstack/eslint-config
-├── prettier.config.js             # No semis, single quotes, trailing commas
-├── components.json                # shadcn/ui config
-└── .cta.json                      # Create TanStack App metadata
-```
-
-</details>
-
-> [!CAUTION]
-> Do not edit files in `convex/_generated/` or `src/routeTree.gen.ts` — these are auto-generated by Convex and TanStack Router respectively.
+Backend: [Convex](https://convex.dev), [Better Auth](https://better-auth.com) via [`@convex-dev/better-auth`](https://github.com/get-convex/better-auth), [`convex-helpers`](https://github.com/get-convex/convex-helpers), [`@convex-dev/rate-limiter`](https://github.com/get-convex/rate-limiter), [`@convex-dev/resend`](https://github.com/get-convex/resend).
 
 ## Database Schema
 
-> [!NOTE]
-> Better Auth manages its own tables (user, session, account, verification) separately via the `@convex-dev/better-auth` component. The tables below are app-specific.
+Identity fields (`name`, `email`, `username`, `image`, `emailVerified`) live on the Better Auth user and belong to `@convex-dev/better-auth`. The local `users` table stores only what Better Auth can't: bio and a Convex storage id for the uploaded avatar. `safeGetAuthenticatedUser` in [`convex/auth.ts`](convex/auth.ts) merges both.
 
-### `users`
-
-| Field | Type | Description |
-| --- | --- | --- |
-| `authId` | `string` | Better Auth user ID (indexed) |
-| `email` | `string` | User email (indexed) |
-| `username` | `string?` | Normalized lowercase username (indexed, unique) |
-| `displayUsername` | `string?` | Original casing username |
-| `firstName` | `string?` | Parsed from Better Auth name |
-| `lastName` | `string?` | Parsed from Better Auth name |
-| `avatar` | `StorageId \| null?` | Uploaded avatar (overrides auth provider image) |
-| `bio` | `string?` | User bio |
-| `role` | `'user' \| 'admin' \| 'moderator'?` | Defaults to `'user'` |
-| `createdAt` | `number?` | Creation timestamp |
-| `updatedAt` | `number?` | Last update timestamp |
-
-**Indexes:** `email`, `authId`, `username`, `createdAt`
-
-### `auditLogs`
-
-Immutable log of user and system actions, written by [database triggers](#audit-logging).
+`users`:
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `action` | `AuditAction` | Action type (e.g. `user.created`, `auth.sign_in`) |
-| `userId` | `Id<'users'>?` | App user ID |
-| `authUserId` | `string?` | Better Auth user ID |
-| `targetId` | `string?` | Affected resource ID |
-| `targetType` | `string?` | Affected resource type |
-| `metadata` | `any?` | Additional context |
-| `timestamp` | `number` | Event timestamp |
+| `authId` | `string` | FK to Better Auth user id (indexed) |
+| `bio` | `string?` | user bio |
+| `avatar` | `Id<'_storage'>?` | storage id for uploaded avatar |
+| `createdAt` | `number` | creation timestamp |
+| `updatedAt` | `number` | last update timestamp |
 
-**Actions:** `user.created`, `user.updated`, `user.deleted`, `user.role_changed`, `auth.sign_in`, `auth.sign_out`, `auth.password_changed`, `auth.email_changed`, `profile.updated`
-
-**Indexes:** `userId`, `action`, `timestamp`, `userId_timestamp`
-
-### `migrations`
-
-Managed by convex-helpers. Tracks executed database migrations.
+Indexes: `authId`, `createdAt`.
 
 ## Authentication
 
-Built on [Better Auth](https://better-auth.com) with the `@convex-dev/better-auth` Convex component.
+Sign in with email + password or username + password. Sign up asks for name, email, password (required) plus username and avatar (optional). Username is 3-30 chars, alphanumeric + `_` and `.`, checked against 17 reserved names in [`convex/constants.ts`](convex/constants.ts), with a 500ms-debounced availability check. Avatars are `image/*`, max 5MB, stored in Convex. Email verification is an OTP through the Better Auth `emailOTP` plugin delivered via Resend.
 
-**Sign-in methods:**
+Sessions expire in 7 days, refresh after 1 day, fresh window is 10 minutes, cookie cache is 5 minutes (compact strategy).
 
-- Email + password
-- Username + password
-
-**Sign-up flow:**
-
-1. Name, email, password (required) + username, avatar (optional)
-2. Username validation: 3–30 chars, alphanumeric + underscore/dot, checked against 18 reserved names, real-time availability check (500ms debounce)
-3. Avatar upload: `image/*` only, max 5MB, uploaded to Convex file storage
-
-**Session config:**
-
-| Setting | Value |
-| --- | ---: |
-| Expiration | 7 days |
-| Refresh | After 1 day |
-| Fresh session | 10 minutes |
-| Cookie cache | 5 minutes (compact strategy) |
-
-<details>
-<summary>Auth rate limits (HTTP layer)</summary>
+Auth rate limits (HTTP layer):
 
 | Endpoint | Limit |
 | --- | ---: |
 | `/sign-in/*` | 5/min |
 | `/sign-up/*` | 3/min |
-| `/forgot-password` | 3/hour |
-| `/reset-password/*` | 3/min |
-| `/send-verification-email` | 3/min |
+| `/email-otp/request-password-reset` | 3/hour |
+| `/email-otp/reset-password` | 3/min |
+| `/email-otp/send-verification-otp` | 3/min |
 | `/list-sessions` | 30/min |
 | `/get-session` | 60/min |
 
-</details>
+SSR auth works because the root route fetches the auth token via `createServerFn`, sets it on `convexQueryClient` before render, and hands it off to the client on hydrate. Authenticated queries work during SSR.
 
-**SSR auth flow:**
+Every auth action (sign-in, sign-up, sign-out, change password, forgot/reset, update email, resend verification, delete account, list/revoke sessions) is handled by Better Auth. Call them from components with `authClient.*` ([`src/lib/auth-client.ts`](src/lib/auth-client.ts)). Routes live at `/api/auth/*`, registered on the Convex HTTP router in [`convex/http.ts`](convex/http.ts).
 
-1. Root route fetches auth token via `createServerFn`
-2. Token is set on `convexQueryClient` before render
-3. Authenticated queries work during server-side rendering
-4. Client hydrates with the same auth state
+## Function Wrappers
 
-**Auth mutations available:** change password, forgot/reset password, update email, resend verification, delete account, list/revoke sessions.
+[`convex/functions.ts`](convex/functions.ts) exports custom query/mutation wrappers that inject `ctx.user`:
 
-## Security
+- `authQuery` / `authMutation`: throws if unauthenticated, `ctx.user` is guaranteed.
+- `optionalAuthQuery`: `ctx.user` may be `undefined`, use for public reads that tailor per-user.
 
-### Row-Level Security (RLS)
+## Rate Limiting
 
-Defined in [`convex/security.ts`](convex/security.ts). Default policy: **deny**.
+Token bucket via [`@convex-dev/rate-limiter`](https://github.com/get-convex/rate-limiter):
 
-| Table | Read | Insert | Modify |
-| --- | --- | --- | --- |
-| `users` | Public | Deny (auth triggers only) | Owner only |
-| `auditLogs` | Deny (admin queries bypass) | Allow (system/triggers) | Deny (immutable) |
-
-### Role-Based Access Control (RBAC)
-
-<details>
-<summary>Custom function wrappers in <code>convex/functions.ts</code></summary>
-
-| Wrapper | Auth Required | RLS | Role |
-| --- | :---: | :---: | --- |
-| `authQuery` / `authMutation` | Yes | No | Any |
-| `optionalAuthQuery` / `optionalAuthMutation` | No | No | Any |
-| `queryWithRLS` / `mutationWithRLS` | No | Yes | Any |
-| `authQueryWithRLS` / `authMutationWithRLS` | Yes | Yes | Any |
-| `adminOnlyQuery` / `adminOnlyMutation` | Yes | No | `admin` |
-| `moderatorQuery` / `moderatorMutation` | Yes | No | `admin` or `moderator` |
-
-</details>
-
-### Rate Limiting
-
-Application-level rate limits via [`@convex-dev/rate-limiter`](https://github.com/get-convex/rate-limiter) (component-based, manages its own tables):
-
-| Name | Rate | Burst | Use Case |
+| Name | Rate | Burst | Use |
 | --- | ---: | ---: | --- |
-| `apiRead` | 100/min | 20 | HTTP GET endpoints |
-| `apiWrite` | 30/min | 10 | HTTP POST/PUT endpoints |
-| `userAction` | 60/min | 10 | Authenticated user actions |
-| `criticalAction` | 10/min | 5 | Sensitive operations |
-
-### Audit Logging
-
-Database triggers ([`convex/triggers.ts`](convex/triggers.ts)) automatically log:
-
-- **User insert:** `user.created` with email, name
-- **User update:** `user.role_changed` if role changes, otherwise `user.updated`
-- **User delete:** `user.deleted` with email
-
-Admin-only queries available: `listAuditLogs`, `getAuditLogsForUser`.
+| `apiRead` | 100/min | 20 | HTTP GET |
+| `apiWrite` | 30/min | 10 | HTTP POST/PUT |
+| `userAction` | 60/min | 10 | authenticated user actions |
+| `criticalAction` | 10/min | 5 | sensitive ops |
 
 ## HTTP API
 
-Defined in [`convex/http.ts`](convex/http.ts) with CORS support (origin from `SITE_URL` env var).
+Defined in [`convex/http.ts`](convex/http.ts) with CORS from `SITE_URL`.
 
-| Method | Path | Auth | Rate Limit | Description |
-| --- | --- | :---: | :---: | --- |
-| `GET` | `/api/health` | No | No | Health check (`{ status, timestamp }`) |
-| `GET` | `/api/users?id=<userId>` | No | `apiRead` | Public user profile |
-| `GET` | `/api/users/list?cursor=...&limit=...` | No | `apiRead` | Paginated user list |
-| `*` | `/api/auth/*` | — | See [auth limits](#authentication) | Better Auth routes (auto-registered) |
+| Method | Path | Auth | Limit |
+| --- | --- | :---: | :---: |
+| `GET` | `/api/health` | no | no |
+| `GET` | `/api/users?id=<userId>` | no | `apiRead` |
+| `GET` | `/api/users/list?cursor=...&limit=...` | no | `apiRead` |
+| `*` | `/api/auth/*` |  | see auth limits |
 
 ## Routes
 
-| Path | Component | Auth | Description |
-| --- | --- | :---: | --- |
-| `/` | `index.tsx` | No | Home page with personalized greeting |
-| `/auth` | `auth.tsx` | No | Sign in / sign up (redirects if already authenticated) |
-| `/profile` | `profile.tsx` | Yes | Profile editor (redirects to `/auth?redirect=/profile` if unauthenticated) |
-| `/api/auth/*` | `api/auth/$.ts` | — | Server-side Better Auth handler |
-| `/*` | `$.tsx` | No | 404 catch-all |
+| Path | File | Auth |
+| --- | --- | :---: |
+| `/` | `index.tsx` | no |
+| `/auth` | `auth.tsx` | no (redirects if signed in) |
+| `/profile` | `profile.tsx` | yes (redirects to `/auth?redirect=/profile`) |
+| `/api/auth/*` | `api/auth/$.ts` |  |
+| `/*` | `$.tsx` | no (404) |
 
-## Available Scripts
+## Scripts
 
-| Script | Command | Description |
-| --- | --- | --- |
-| `setup` | `bun run setup` | Connect to Convex cloud, generate `.env.local`, set secrets |
-| `setup:local` | `bun run setup:local` | Same but with local Convex backend |
-| `dev` | `bun run dev` | Start Vite dev server on port 3000 |
-| `build` | `bun run build` | Production build |
-| `serve` | `bun run serve` | Preview production build |
-| `test` | `bun run test` | Run Vitest |
-| `lint` | `bun run lint` | Run ESLint |
-| `format` | `bun run format` | Run Prettier |
-| `check` | `bun run check` | Prettier write + ESLint fix |
-| `clean` | `bun run clean` | Remove `node_modules`, `dist`, `.output`, `bun.lock` and reinstall |
+| Script | Description |
+| --- | --- |
+| `setup` | wipe, reinstall, configure Convex + Resend |
+| `setup:local` | same, with Docker Convex |
+| `dev` | Vite dev server on :3000 |
+| `build` | production build |
+| `serve` | preview build |
+| `lint` | ESLint |
+| `format` | Prettier |
+| `check` | Prettier write + ESLint fix |
+| `cleanup` | nuke deps and build artifacts, reinstall |
+
+Do not edit `convex/_generated/` or `src/routeTree.gen.ts`. Convex and TanStack Router regenerate them.
 
 ## Deploy
 
-1. **Deploy Convex to production:**
+Ship Convex to prod:
 
-   ```bash
-   bunx convex deploy --cmd "bun run build"
-   ```
+```bash
+bunx convex deploy --cmd "bun run build"
+```
 
-2. **Set Convex production environment variables:**
-
-   ```bash
-   bunx convex env set SITE_URL https://your-app.vercel.app --prod
-   bunx convex env set BETTER_AUTH_SECRET $(openssl rand -base64 32) --prod
-   ```
-
-3. **Set hosting provider environment variables** (Vercel, Netlify, etc.):
-
-   ```bash
-   CONVEX_DEPLOYMENT=prod:your-project-name
-   SITE_URL=https://your-app.vercel.app
-   ```
+Then set the prod env vars on Convex (see the env var section above) and the two client vars on your host.
 
 ## License
 

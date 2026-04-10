@@ -1,0 +1,871 @@
+diff --git a/package.json b/package.json
+--- a/package.json
++++ b/package.json
+@@ -103,7 +103,7 @@
+     }
+   },
+   "peerDependencies": {
+-    "better-auth": ">=1.5.0 <1.6.0",
++    "better-auth": ">=1.6.0 <1.7.0",
+     "convex": "^1.25.0",
+     "react": "^18.3.1 || ^19.0.0"
+   },
+diff --git a/dist/auth-options.js b/dist/auth-options.js
+--- a/dist/auth-options.js
++++ b/dist/auth-options.js
+@@ -35,6 +35,7 @@
+         }),
+         oidcProvider({
+             loginPage: "/login",
++            __skipDeprecationWarning: true,
+         }),
+         bearer(),
+         oneTimeToken(),
+diff --git a/dist/client/adapter-utils.d.ts b/dist/client/adapter-utils.d.ts
+--- a/dist/client/adapter-utils.d.ts
++++ b/dist/client/adapter-utils.d.ts
+@@ -2,6 +2,7 @@
+ import type { DocumentByName, GenericDataModel, GenericQueryCtx, PaginationOptions, PaginationResult, SchemaDefinition, TableNamesInDataModel } from "convex/server";
+ import type { BetterAuthDBSchema } from "better-auth/db";
+ export declare const adapterWhereValidator: import("convex/values").VObject<{
++    mode?: "sensitive" | "insensitive" | undefined;
+     operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+     connector?: "AND" | "OR" | undefined;
+     value: string | number | boolean | string[] | number[] | null;
+@@ -11,7 +12,8 @@
+     operator: import("convex/values").VUnion<"lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined, [import("convex/values").VLiteral<"lt", "required">, import("convex/values").VLiteral<"lte", "required">, import("convex/values").VLiteral<"gt", "required">, import("convex/values").VLiteral<"gte", "required">, import("convex/values").VLiteral<"eq", "required">, import("convex/values").VLiteral<"in", "required">, import("convex/values").VLiteral<"not_in", "required">, import("convex/values").VLiteral<"ne", "required">, import("convex/values").VLiteral<"contains", "required">, import("convex/values").VLiteral<"starts_with", "required">, import("convex/values").VLiteral<"ends_with", "required">], "optional", never>;
+     value: import("convex/values").VUnion<string | number | boolean | string[] | number[] | null, [import("convex/values").VString<string, "required">, import("convex/values").VFloat64<number, "required">, import("convex/values").VBoolean<boolean, "required">, import("convex/values").VArray<string[], import("convex/values").VString<string, "required">, "required">, import("convex/values").VArray<number[], import("convex/values").VFloat64<number, "required">, "required">, import("convex/values").VNull<null, "required">], "required", never>;
+     connector: import("convex/values").VUnion<"AND" | "OR" | undefined, [import("convex/values").VLiteral<"AND", "required">, import("convex/values").VLiteral<"OR", "required">], "optional", never>;
+-}, "required", "value" | "field" | "operator" | "connector">;
++    mode: import("convex/values").VUnion<"sensitive" | "insensitive" | undefined, [import("convex/values").VLiteral<"sensitive", "required">, import("convex/values").VLiteral<"insensitive", "required">], "optional", never>;
++}, "required", "value" | "field" | "mode" | "operator" | "connector">;
+ export declare const adapterArgsValidator: import("convex/values").VObject<{
+     select?: string[] | undefined;
+     limit?: number | undefined;
+@@ -21,6 +23,7 @@
+         direction: "asc" | "desc";
+     } | undefined;
+     where?: {
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+@@ -30,11 +33,13 @@
+ }, {
+     model: import("convex/values").VString<string, "required">;
+     where: import("convex/values").VArray<{
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+         field: string;
+     }[] | undefined, import("convex/values").VObject<{
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+@@ -44,7 +49,8 @@
+         operator: import("convex/values").VUnion<"lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined, [import("convex/values").VLiteral<"lt", "required">, import("convex/values").VLiteral<"lte", "required">, import("convex/values").VLiteral<"gt", "required">, import("convex/values").VLiteral<"gte", "required">, import("convex/values").VLiteral<"eq", "required">, import("convex/values").VLiteral<"in", "required">, import("convex/values").VLiteral<"not_in", "required">, import("convex/values").VLiteral<"ne", "required">, import("convex/values").VLiteral<"contains", "required">, import("convex/values").VLiteral<"starts_with", "required">, import("convex/values").VLiteral<"ends_with", "required">], "optional", never>;
+         value: import("convex/values").VUnion<string | number | boolean | string[] | number[] | null, [import("convex/values").VString<string, "required">, import("convex/values").VFloat64<number, "required">, import("convex/values").VBoolean<boolean, "required">, import("convex/values").VArray<string[], import("convex/values").VString<string, "required">, "required">, import("convex/values").VArray<number[], import("convex/values").VFloat64<number, "required">, "required">, import("convex/values").VNull<null, "required">], "required", never>;
+         connector: import("convex/values").VUnion<"AND" | "OR" | undefined, [import("convex/values").VLiteral<"AND", "required">, import("convex/values").VLiteral<"OR", "required">], "optional", never>;
+-    }, "required", "value" | "field" | "operator" | "connector">, "optional">;
++        mode: import("convex/values").VUnion<"sensitive" | "insensitive" | undefined, [import("convex/values").VLiteral<"sensitive", "required">, import("convex/values").VLiteral<"insensitive", "required">], "optional", never>;
++    }, "required", "value" | "field" | "mode" | "operator" | "connector">, "optional">;
+     sortBy: import("convex/values").VObject<{
+         field: string;
+         direction: "asc" | "desc";
+diff --git a/dist/client/adapter-utils.js b/dist/client/adapter-utils.js
+--- a/dist/client/adapter-utils.js
++++ b/dist/client/adapter-utils.js
+@@ -8,6 +8,7 @@
+     operator: v.optional(v.union(v.literal("lt"), v.literal("lte"), v.literal("gt"), v.literal("gte"), v.literal("eq"), v.literal("in"), v.literal("not_in"), v.literal("ne"), v.literal("contains"), v.literal("starts_with"), v.literal("ends_with"))),
+     value: v.union(v.string(), v.number(), v.boolean(), v.array(v.string()), v.array(v.number()), v.null()),
+     connector: v.optional(v.union(v.literal("AND"), v.literal("OR"))),
++    mode: v.optional(v.union(v.literal("sensitive"), v.literal("insensitive"))),
+ });
+ export const adapterArgsValidator = v.object({
+     model: v.string(),
+@@ -44,8 +45,9 @@
+         throw new Error(`OR connector not supported with multiple where statements in findIndex, split up the where statements before calling findIndex: ${JSON.stringify(args.where)}`);
+     }
+     const where = args.where?.filter((w) => {
+-        return ((!w.operator ||
+-            ["lt", "lte", "gt", "gte", "eq", "in", "not_in"].includes(w.operator)) &&
++        return (w.mode !== "insensitive" &&
++            (!w.operator ||
++                ["lt", "lte", "gt", "gte", "eq", "in", "not_in"].includes(w.operator)) &&
+             w.field !== "_id");
+     });
+     if (!where?.length && !args.sortBy) {
+@@ -132,6 +134,10 @@
+         },
+     };
+ };
++// Convex indexes are byte-compared, so unique-field enforcement here is
++// always case-sensitive. If Better Auth ever marks a unique field as
++// case-insensitive, this check would silently miss case-folded duplicates
++// and uniqueness must be enforced via a separate normalized field.
+ export const checkUniqueFields = async (ctx, schema, betterAuthSchema, table, input, doc) => {
+     if (!hasUniqueFields(betterAuthSchema, table, input)) {
+         return;
+@@ -208,17 +214,31 @@
+             return val > wVal;
+         };
+         const filter = (w) => {
++            const insensitive = w.mode === "insensitive";
++            const lc = (s) => insensitive && typeof s === "string" ? s.toLowerCase() : s;
+             switch (w.operator) {
+                 case undefined:
+                 case "eq": {
+-                    return value === w.value;
++                    if (w.value === null) {
++                        return value === null || value === undefined;
++                    }
++                    return lc(value) === lc(w.value);
+                 }
+                 case "in": {
+-                    return Array.isArray(w.value) && w.value.includes(value);
++                    if (!Array.isArray(w.value))
++                        return false;
++                    if (insensitive) {
++                        return w.value.some((v) => lc(v) === lc(value));
++                    }
++                    return w.value.includes(value);
+                 }
+                 case "not_in": {
+-                    const result = Array.isArray(w.value) && !w.value.includes(value);
+-                    return result;
++                    if (!Array.isArray(w.value))
++                        return false;
++                    if (insensitive) {
++                        return !w.value.some((v) => lc(v) === lc(value));
++                    }
++                    return !w.value.includes(value);
+                 }
+                 case "lt": {
+                     return isLessThan(value, w.value);
+@@ -233,16 +253,34 @@
+                     return value === w.value || isGreaterThan(value, w.value);
+                 }
+                 case "ne": {
+-                    return value !== w.value;
++                    if (w.value === null) {
++                        return value !== null && value !== undefined;
++                    }
++                    return lc(value) !== lc(w.value);
+                 }
+                 case "contains": {
+-                    return typeof value === "string" && value.includes(w.value);
++                    if (typeof value !== "string" || typeof w.value !== "string") {
++                        return false;
++                    }
++                    return insensitive
++                        ? value.toLowerCase().includes(w.value.toLowerCase())
++                        : value.includes(w.value);
+                 }
+                 case "starts_with": {
+-                    return (typeof value === "string" && value.startsWith(w.value));
++                    if (typeof value !== "string" || typeof w.value !== "string") {
++                        return false;
++                    }
++                    return insensitive
++                        ? value.toLowerCase().startsWith(w.value.toLowerCase())
++                        : value.startsWith(w.value);
+                 }
+                 case "ends_with": {
+-                    return typeof value === "string" && value.endsWith(w.value);
++                    if (typeof value !== "string" || typeof w.value !== "string") {
++                        return false;
++                    }
++                    return insensitive
++                        ? value.toLowerCase().endsWith(w.value.toLowerCase())
++                        : value.endsWith(w.value);
+                 }
+             }
+         };
+@@ -302,9 +340,11 @@
+         }
+         return filterByWhere(doc, args.where, 
+         // Index used for all eq and range clauses, apply remaining clauses
+-        // incompatible with Convex statically.
+-        (w) => w.operator &&
+-            ["contains", "starts_with", "ends_with", "ne", "not_in"].includes(w.operator));
++        // incompatible with Convex statically. Case-insensitive clauses are
++        // also re-applied here since Convex indexes are byte-compared.
++        (w) => w.mode === "insensitive" ||
++            (!!w.operator &&
++                ["contains", "starts_with", "ends_with", "ne", "not_in"].includes(w.operator)));
+     });
+     return filteredQuery;
+ };
+@@ -325,8 +365,10 @@
+     }
+     // If any where clause is "eq" (or missing operator) on a unique field,
+     // we can only return a single document, so we get it and use any other
+-    // where clauses as static filters.
+-    const uniqueWhere = args.where?.find((w) => (!w.operator || w.operator === "eq") &&
++    // where clauses as static filters. Insensitive mode can't use the indexed
++    // fast-path since Convex indexes are byte-compared.
++    const uniqueWhere = args.where?.find((w) => w.mode !== "insensitive" &&
++        (!w.operator || w.operator === "eq") &&
+         (isUniqueField(betterAuthSchema, args.model, w.field) ||
+             w.field === "_id"));
+     if (uniqueWhere) {
+@@ -363,8 +405,10 @@
+     // Large queries using "in" clause will crash, but these are only currently
+     // possible with the organization plugin listing all members with a high
+     // limit. For cases like this we need to create proper convex queries in
+-    // the component as an alternative to using Better Auth api's.
+-    const inWhere = args.where?.find((w) => w.operator === "in");
++    // the component as an alternative to using Better Auth api's. Insensitive
++    // mode falls through to the single-scan path so we don't merge duplicated
++    // results from N case-folded split streams.
++    const inWhere = args.where?.find((w) => w.operator === "in" && w.mode !== "insensitive");
+     if (inWhere) {
+         if (!Array.isArray(inWhere.value)) {
+             throw new Error("in clause value must be an array");
+diff --git a/dist/client/create-api.d.ts b/dist/client/create-api.d.ts
+--- a/dist/client/create-api.d.ts
++++ b/dist/client/create-api.d.ts
+@@ -18,6 +18,7 @@
+         join?: any;
+         select?: string[] | undefined;
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -35,6 +36,7 @@
+             direction: "asc" | "desc";
+         } | undefined;
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -54,6 +56,7 @@
+         onUpdateHandle?: string | undefined;
+         input: {
+             where?: {
++                mode?: "sensitive" | "insensitive" | undefined;
+                 operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+                 connector?: "AND" | "OR" | undefined;
+                 value: string | number | boolean | string[] | number[] | null;
+@@ -71,6 +74,7 @@
+         onUpdateHandle?: string | undefined;
+         input: {
+             where?: {
++                mode?: "sensitive" | "insensitive" | undefined;
+                 operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+                 connector?: "AND" | "OR" | undefined;
+                 value: string | number | boolean | string[] | number[] | null;
+@@ -103,6 +107,7 @@
+         onDeleteHandle?: string | undefined;
+         input: {
+             where?: {
++                mode?: "sensitive" | "insensitive" | undefined;
+                 operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+                 connector?: "AND" | "OR" | undefined;
+                 value: string | number | boolean | string[] | number[] | null;
+@@ -115,6 +120,7 @@
+         onDeleteHandle?: string | undefined;
+         input: {
+             where?: {
++                mode?: "sensitive" | "insensitive" | undefined;
+                 operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+                 connector?: "AND" | "OR" | undefined;
+                 value: string | number | boolean | string[] | number[] | null;
+diff --git a/dist/client/create-api.js b/dist/client/create-api.js
+--- a/dist/client/create-api.js
++++ b/dist/client/create-api.js
+@@ -9,6 +9,7 @@
+     operator: v.optional(v.union(v.literal("lt"), v.literal("lte"), v.literal("gt"), v.literal("gte"), v.literal("eq"), v.literal("in"), v.literal("not_in"), v.literal("ne"), v.literal("contains"), v.literal("starts_with"), v.literal("ends_with"))),
+     value: v.union(v.string(), v.number(), v.boolean(), v.array(v.string()), v.array(v.number()), v.null()),
+     connector: v.optional(v.union(v.literal("AND"), v.literal("OR"))),
++    mode: v.optional(v.union(v.literal("sensitive"), v.literal("insensitive"))),
+ });
+ export const createApi = (schema, createAuthOptions) => {
+     const betterAuthSchema = getAuthTables(createAuthOptions({}));
+diff --git a/dist/component/adapter.d.ts b/dist/component/adapter.d.ts
+--- a/dist/component/adapter.d.ts
++++ b/dist/component/adapter.d.ts
+@@ -13,6 +13,7 @@
+     join?: any;
+     select?: string[] | undefined;
+     where?: {
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+@@ -29,6 +30,7 @@
+         direction: "asc" | "desc";
+     } | undefined;
+     where?: {
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+@@ -47,6 +49,7 @@
+     onUpdateHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -63,6 +66,7 @@
+     onUpdateHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -94,6 +98,7 @@
+     onDeleteHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -105,6 +110,7 @@
+     onDeleteHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+diff --git a/dist/component/adapterTest.js b/dist/component/adapterTest.js
+--- a/dist/component/adapterTest.js
++++ b/dist/component/adapterTest.js
+@@ -78,7 +78,7 @@
+ const organizationJoinsProfileApi = profileApi("adapterOrganizationJoins");
+ export const runTests = action(async (ctx, _args) => {
+     const testUtilsImport = "@better-auth/test-utils/adapter";
+-    const { testAdapter, transactionsTestSuite, uuidTestSuite } = await import(testUtilsImport);
++    const { testAdapter, transactionsTestSuite, uuidTestSuite, caseInsensitiveTestSuite, } = await import(testUtilsImport);
+     const adapterFactoryImport = "../test/adapter-factory/index.js";
+     const { coreNormalTestSuite, coreAuthFlowTestSuite, additionalFieldsNormalTestSuite, additionalFieldsAuthFlowTestSuite, pluginTableNormalTestSuite, renameFieldAndJoinTestSuite, renameModelUserCustomTestSuite, renameModelUserTableTestSuite, multiJoinsMissingRowsTestSuite, convexCustomTestSuite, } = await import(adapterFactoryImport);
+     const baseProfileClient = createClient(baseProfileApi, {
+@@ -120,6 +120,7 @@
+             transactionsTestSuite({ disableTests: { ALL: true } }),
+             coreAuthFlowTestSuite(),
+             convexCustomTestSuite(),
++            caseInsensitiveTestSuite(),
+         ],
+     });
+     const { execute: executeAdditionalFieldsProfile } = await testAdapter({
+diff --git a/dist/component/testProfiles/adapterAdditionalFields.d.ts b/dist/component/testProfiles/adapterAdditionalFields.d.ts
+--- a/dist/component/testProfiles/adapterAdditionalFields.d.ts
++++ b/dist/component/testProfiles/adapterAdditionalFields.d.ts
+@@ -13,6 +13,7 @@
+     join?: any;
+     select?: string[] | undefined;
+     where?: {
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+@@ -29,6 +30,7 @@
+         direction: "asc" | "desc";
+     } | undefined;
+     where?: {
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+@@ -47,6 +49,7 @@
+     onUpdateHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -63,6 +66,7 @@
+     onUpdateHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -94,6 +98,7 @@
+     onDeleteHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -105,6 +110,7 @@
+     onDeleteHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+diff --git a/dist/component/testProfiles/adapterOrganizationJoins.d.ts b/dist/component/testProfiles/adapterOrganizationJoins.d.ts
+--- a/dist/component/testProfiles/adapterOrganizationJoins.d.ts
++++ b/dist/component/testProfiles/adapterOrganizationJoins.d.ts
+@@ -13,6 +13,7 @@
+     join?: any;
+     select?: string[] | undefined;
+     where?: {
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+@@ -29,6 +30,7 @@
+         direction: "asc" | "desc";
+     } | undefined;
+     where?: {
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+@@ -47,6 +49,7 @@
+     onUpdateHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -63,6 +66,7 @@
+     onUpdateHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -94,6 +98,7 @@
+     onDeleteHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -105,6 +110,7 @@
+     onDeleteHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+diff --git a/dist/component/testProfiles/adapterPluginTable.d.ts b/dist/component/testProfiles/adapterPluginTable.d.ts
+--- a/dist/component/testProfiles/adapterPluginTable.d.ts
++++ b/dist/component/testProfiles/adapterPluginTable.d.ts
+@@ -13,6 +13,7 @@
+     join?: any;
+     select?: string[] | undefined;
+     where?: {
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+@@ -29,6 +30,7 @@
+         direction: "asc" | "desc";
+     } | undefined;
+     where?: {
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+@@ -47,6 +49,7 @@
+     onUpdateHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -63,6 +66,7 @@
+     onUpdateHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -94,6 +98,7 @@
+     onDeleteHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -105,6 +110,7 @@
+     onDeleteHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+diff --git a/dist/component/testProfiles/adapterRenameField.d.ts b/dist/component/testProfiles/adapterRenameField.d.ts
+--- a/dist/component/testProfiles/adapterRenameField.d.ts
++++ b/dist/component/testProfiles/adapterRenameField.d.ts
+@@ -13,6 +13,7 @@
+     join?: any;
+     select?: string[] | undefined;
+     where?: {
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+@@ -29,6 +30,7 @@
+         direction: "asc" | "desc";
+     } | undefined;
+     where?: {
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+@@ -47,6 +49,7 @@
+     onUpdateHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -63,6 +66,7 @@
+     onUpdateHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -94,6 +98,7 @@
+     onDeleteHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -105,6 +110,7 @@
+     onDeleteHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+diff --git a/dist/component/testProfiles/adapterRenameUserCustom.d.ts b/dist/component/testProfiles/adapterRenameUserCustom.d.ts
+--- a/dist/component/testProfiles/adapterRenameUserCustom.d.ts
++++ b/dist/component/testProfiles/adapterRenameUserCustom.d.ts
+@@ -13,6 +13,7 @@
+     join?: any;
+     select?: string[] | undefined;
+     where?: {
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+@@ -29,6 +30,7 @@
+         direction: "asc" | "desc";
+     } | undefined;
+     where?: {
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+@@ -47,6 +49,7 @@
+     onUpdateHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -63,6 +66,7 @@
+     onUpdateHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -94,6 +98,7 @@
+     onDeleteHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -105,6 +110,7 @@
+     onDeleteHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+diff --git a/dist/component/testProfiles/adapterRenameUserTable.d.ts b/dist/component/testProfiles/adapterRenameUserTable.d.ts
+--- a/dist/component/testProfiles/adapterRenameUserTable.d.ts
++++ b/dist/component/testProfiles/adapterRenameUserTable.d.ts
+@@ -13,6 +13,7 @@
+     join?: any;
+     select?: string[] | undefined;
+     where?: {
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+@@ -29,6 +30,7 @@
+         direction: "asc" | "desc";
+     } | undefined;
+     where?: {
++        mode?: "sensitive" | "insensitive" | undefined;
+         operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+         connector?: "AND" | "OR" | undefined;
+         value: string | number | boolean | string[] | number[] | null;
+@@ -47,6 +49,7 @@
+     onUpdateHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -63,6 +66,7 @@
+     onUpdateHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -94,6 +98,7 @@
+     onDeleteHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+@@ -105,6 +110,7 @@
+     onDeleteHandle?: string | undefined;
+     input: {
+         where?: {
++            mode?: "sensitive" | "insensitive" | undefined;
+             operator?: "lt" | "lte" | "gt" | "gte" | "eq" | "in" | "not_in" | "ne" | "contains" | "starts_with" | "ends_with" | undefined;
+             connector?: "AND" | "OR" | undefined;
+             value: string | number | boolean | string[] | number[] | null;
+diff --git a/dist/plugins/convex/client.d.ts b/dist/plugins/convex/client.d.ts
+--- a/dist/plugins/convex/client.d.ts
++++ b/dist/plugins/convex/client.d.ts
+@@ -1,6 +1,7 @@
+ import type { convex } from "./index.js";
+ export declare const convexClient: () => {
+     id: "convex";
++    version: string;
+     $InferServerPlugin: ReturnType<typeof convex>;
+ };
+ //# sourceMappingURL=client.d.ts.map
+\ No newline at end of file
+diff --git a/dist/plugins/convex/client.js b/dist/plugins/convex/client.js
+--- a/dist/plugins/convex/client.js
++++ b/dist/plugins/convex/client.js
+@@ -1,6 +1,8 @@
++import { VERSION } from "../../version.js";
+ export const convexClient = () => {
+     return {
+         id: "convex",
++        version: VERSION,
+         $InferServerPlugin: {},
+     };
+ };
+diff --git a/dist/plugins/convex/index.d.ts b/dist/plugins/convex/index.d.ts
+--- a/dist/plugins/convex/index.d.ts
++++ b/dist/plugins/convex/index.d.ts
+@@ -103,6 +103,7 @@
+     options?: BetterAuthOptions;
+ }) => {
+     id: "convex";
++    version: string;
+     init: (ctx: import("better-auth").AuthContext) => void;
+     hooks: {
+         before: ({
+diff --git a/dist/plugins/convex/index.js b/dist/plugins/convex/index.js
+--- a/dist/plugins/convex/index.js
++++ b/dist/plugins/convex/index.js
+@@ -3,6 +3,7 @@
+ import { jwt as jwtPlugin } from "better-auth/plugins/jwt";
+ import { oidcProvider as oidcProviderPlugin } from "better-auth/plugins/oidc-provider";
+ import { omit } from "convex-helpers";
++import { VERSION } from "../../version.js";
+ export const JWT_COOKIE_NAME = "convex_jwt";
+ const normalizeAfterHooks = (hooks) => {
+     return hooks.map((hook) => ({
+@@ -47,6 +48,7 @@
+             issuer: `${process.env.CONVEX_SITE_URL}`,
+             jwks_uri: `${process.env.CONVEX_SITE_URL}${opts.options?.basePath ?? "/api/auth"}/convex/jwks`,
+         },
++        __skipDeprecationWarning: true,
+     });
+     const providerConfig = parseAuthConfig(opts.authConfig, opts);
+     const jwtOptions = {
+@@ -117,6 +119,7 @@
+     };
+     return {
+         id: "convex",
++        version: VERSION,
+         init: (ctx) => {
+             const { options, logger: _logger } = ctx;
+             if (options.basePath !== "/api/auth" && !opts.options?.basePath) {
+@@ -189,6 +192,7 @@
+                                 ...ctx,
+                                 headers: {},
+                                 method: "GET",
++                                asResponse: false,
+                                 returnHeaders: false,
+                                 returnStatus: false,
+                             });
+@@ -230,6 +234,7 @@
+             }, async (ctx) => {
+                 const response = await oidcProvider.endpoints.getOpenIdConfig({
+                     ...ctx,
++                    asResponse: false,
+                     returnHeaders: false,
+                     returnStatus: false,
+                 });
+@@ -313,6 +318,7 @@
+             }, async (ctx) => {
+                 const response = await jwt.endpoints.getJwks({
+                     ...ctx,
++                    asResponse: false,
+                     returnHeaders: false,
+                     returnStatus: false,
+                 });
+@@ -335,6 +341,7 @@
+                 await jwtPlugin(jwtOptions).endpoints.getJwks({
+                     ...ctx,
+                     method: "GET",
++                    asResponse: false,
+                 });
+                 const jwks = await ctx.context.adapter.findMany({
+                     model: "jwks",
+@@ -368,6 +375,7 @@
+                 await jwtPlugin(jwtOptions).endpoints.getJwks({
+                     ...ctx,
+                     method: "GET",
++                    asResponse: false,
+                 });
+                 const jwks = await ctx.context.adapter.findMany({
+                     model: "jwks",
+@@ -410,6 +418,7 @@
+                 const runEndpoint = async () => {
+                     const response = await jwt.endpoints.getToken({
+                         ...ctx,
++                        asResponse: false,
+                         returnHeaders: false,
+                         returnStatus: false,
+                     });
+diff --git a/dist/plugins/cross-domain/client.d.ts b/dist/plugins/cross-domain/client.d.ts
+--- a/dist/plugins/cross-domain/client.d.ts
++++ b/dist/plugins/cross-domain/client.d.ts
+@@ -23,6 +23,7 @@
+     disableCache?: boolean;
+ }) => {
+     id: "cross-domain";
++    version: string;
+     $InferServerPlugin: ReturnType<typeof crossDomain>;
+     getActions(_: import("@better-fetch/fetch").BetterFetch, $store: ClientStore): {
+         /**
+diff --git a/dist/plugins/cross-domain/client.js b/dist/plugins/cross-domain/client.js
+--- a/dist/plugins/cross-domain/client.js
++++ b/dist/plugins/cross-domain/client.js
+@@ -1,3 +1,4 @@
++import { VERSION } from "../../version.js";
+ export function parseSetCookieHeader(header) {
+     const cookieMap = new Map();
+     const cookies = header.split(", ");
+@@ -66,6 +67,7 @@
+     const storage = opts?.storage || (typeof window !== "undefined" ? localStorage : undefined);
+     return {
+         id: "cross-domain",
++        version: VERSION,
+         $InferServerPlugin: {},
+         getActions(_, $store) {
+             store = $store;
+diff --git a/dist/plugins/cross-domain/index.d.ts b/dist/plugins/cross-domain/index.d.ts
+--- a/dist/plugins/cross-domain/index.d.ts
++++ b/dist/plugins/cross-domain/index.d.ts
+@@ -3,6 +3,7 @@
+     siteUrl: string;
+ }) => {
+     id: "cross-domain";
++    version: string;
+     init(): {
+         options: {
+             trustedOrigins: string[];
+diff --git a/dist/plugins/cross-domain/index.js b/dist/plugins/cross-domain/index.js
+--- a/dist/plugins/cross-domain/index.js
++++ b/dist/plugins/cross-domain/index.js
+@@ -3,6 +3,7 @@
+ import { createAuthEndpoint, createAuthMiddleware } from "better-auth/api";
+ import { oneTimeToken as oneTimeTokenPlugin } from "better-auth/plugins/one-time-token";
+ import { z } from "zod";
++import { VERSION } from "../../version.js";
+ export const crossDomain = ({ siteUrl }) => {
+     const oneTimeToken = oneTimeTokenPlugin();
+     const rewriteCallbackURL = (callbackURL) => {
+@@ -19,6 +20,7 @@
+     };
+     return {
+         id: "cross-domain",
++        version: VERSION,
+         // TODO: remove this in the next minor release, it doesn't
+         // actually affect ctx.trustedOrigins. cors allowedOrigins
+         // is using it, via options.trustedOrigins, though, so it's
+@@ -161,6 +163,7 @@
+             }, async (ctx) => {
+                 const response = await oneTimeToken.endpoints.verifyOneTimeToken({
+                     ...ctx,
++                    asResponse: false,
+                     returnHeaders: false,
+                     returnStatus: false,
+                 });
+diff --git a/dist/test/adapter-factory/basic.d.ts b/dist/test/adapter-factory/basic.d.ts
+--- a/dist/test/adapter-factory/basic.d.ts
++++ b/dist/test/adapter-factory/basic.d.ts
+@@ -162,6 +162,10 @@
+         test: () => Promise<void>;
+     };
+     "update - should support multiple where conditions under AND connector with unique field": () => Promise<void>;
++    "findMany - eq operator with null value (single condition) should use IS NULL": () => Promise<void>;
++    "findMany - eq and ne operators with null value in AND group should use IS NULL / IS NOT NULL": () => Promise<void>;
++    "findMany - eq and ne operators with null value in OR group should use IS NULL / IS NOT NULL": () => Promise<void>;
++    "update - should return updated record when where condition uses null value": () => Promise<void>;
+ };
+ export {};
+ //# sourceMappingURL=basic.d.ts.map
+\ No newline at end of file
+diff --git a/dist/version.d.ts b/dist/version.d.ts
+new file mode 100644
+--- /dev/null
++++ b/dist/version.d.ts
+@@ -0,0 +1,2 @@
++export declare const VERSION = "0.12.0";
++//# sourceMappingURL=version.d.ts.map
+\ No newline at end of file
+diff --git a/dist/version.js b/dist/version.js
+new file mode 100644
+--- /dev/null
++++ b/dist/version.js
+@@ -0,0 +1,2 @@
++export const VERSION = "0.12.0";
++//# sourceMappingURL=version.js.map
+\ No newline at end of file
