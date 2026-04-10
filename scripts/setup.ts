@@ -16,7 +16,6 @@
  *   bun run setup               cloud Convex, interactive
  *   bun run setup --local       self-hosted / local Convex backend
  *   bun run setup --fresh       provision a NEW Convex deployment (nuclear)
- *   bun run setup --no-resend   skip Resend env prompts
  *   bun run setup --version     print Bun version and exit
  *   bun run setup --help        print usage and exit
  *
@@ -112,8 +111,6 @@ ${BOLD}Usage:${RESET}
   ${DIM}bun run setup --fresh${RESET}        provision a NEW Convex deployment
                                (wipes ${DIM}.env.local${RESET}; use after schema
                                refactors that reject old rows)
-  ${DIM}bun run setup --no-resend${RESET}    skip Resend prompts (auth flows will
-                               be broken until you set RESEND_API_KEY)
   ${DIM}bun run setup --version${RESET}      print Bun version and exit
   ${DIM}bun run setup --help${RESET}         this message
 
@@ -135,7 +132,6 @@ verification, password reset, and email change all need email delivery.
 type Args = {
   local?: boolean
   fresh?: boolean
-  'no-resend'?: boolean
   version?: boolean
   help?: boolean
 }
@@ -147,7 +143,6 @@ try {
     options: {
       local: { type: 'boolean', default: false },
       fresh: { type: 'boolean', default: false },
-      'no-resend': { type: 'boolean', default: false },
       version: { type: 'boolean', short: 'v', default: false },
       help: { type: 'boolean', short: 'h', default: false },
     },
@@ -576,9 +571,9 @@ async function stepAuthEnv(fresh: boolean): Promise<void> {
 
 /**
  * Warning shown whenever the user ends up without RESEND_API_KEY set —
- * either via --no-resend, a non-TTY environment, or an explicit "skip
- * anyway" confirmation in the prompt loop. The codebase requires Resend
- * for sign-up, sign-in (email + OTP), password reset, and change-email.
+ * either via a non-TTY environment or an explicit "skip anyway"
+ * confirmation in the prompt loop. The codebase requires Resend for
+ * sign-up, sign-in (email + OTP), password reset, and change-email.
  */
 function warnResendUnconfigured(): void {
   bad('RESEND_API_KEY is unset — auth flows will fail at runtime')
@@ -586,7 +581,7 @@ function warnResendUnconfigured(): void {
   note('set later with: bunx convex env set RESEND_API_KEY re_...')
 }
 
-async function stepResend(skip: boolean, fresh: boolean): Promise<void> {
+async function stepResend(fresh: boolean): Promise<void> {
   section('Resend (email delivery — required)')
 
   // Same reasoning as stepAuthEnv: on --fresh the deployment is empty, any
@@ -597,12 +592,6 @@ async function stepResend(skip: boolean, fresh: boolean): Promise<void> {
   // `<your-project>` placeholder. Falls back gracefully if the var is missing.
   const localEnv = await readEnvFile()
   const siteUrl = localEnv.get('VITE_CONVEX_SITE_URL') ?? 'https://<your-project>.convex.site'
-
-  if (skip) {
-    nop('--no-resend passed, skipping prompts')
-    if (!env.has('RESEND_API_KEY')) warnResendUnconfigured()
-    return
-  }
 
   const missing = [
     'RESEND_API_KEY',
@@ -764,7 +753,7 @@ if (import.meta.main) {
     activeConvexDev = await stepConvexDev(!!args.local, !!args.fresh)
     await stepLocalEnv()
     await stepAuthEnv(!!args.fresh)
-    await stepResend(!!args['no-resend'], !!args.fresh)
+    await stepResend(!!args.fresh)
     await printSummary(!!args.local, performance.now() - startedAt)
   } catch (err) {
     line()

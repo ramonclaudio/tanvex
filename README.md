@@ -53,7 +53,7 @@ One command, fresh clone to running app. Same command for full reset.
 
 Re-running setup does not rotate existing Convex env vars. For one-off changes use `bunx convex env set NAME VALUE` directly.
 
-Flags: `--local` (Docker Convex), `--no-resend` (skip email prompts), `--version`, `--help`.
+Flags: `--local` (Docker Convex), `--fresh` (new deployment), `--version`, `--help`.
 
 ## Resend Webhook (Optional)
 
