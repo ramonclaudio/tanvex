@@ -7,14 +7,14 @@
  * Uses centralized auth functions from auth.ts to avoid duplication.
  */
 
-import { customCtx, customMutation, customQuery } from "convex-helpers/server/customFunctions";
+import { customCtx, customMutation, customQuery } from "convex-helpers/server/customFunctions"
 
-import { mutation, query } from "./_generated/server";
-import { requireAuthenticatedUser, safeGetAuthenticatedUser } from "./auth";
-import type { AuthUser } from "./auth";
+import { mutation, query } from "./_generated/server"
+import { requireAuthenticatedUser, safeGetAuthenticatedUser } from "./auth"
+import type { AuthUser } from "./auth"
 
 // Re-export AuthUser type for convenience
-export type { AuthUser };
+export type { AuthUser }
 
 // ============================================================================
 // Query Wrappers
@@ -37,7 +37,7 @@ export const authQuery = customQuery(
   customCtx(async (ctx) => ({
     user: await requireAuthenticatedUser(ctx),
   })),
-);
+)
 
 /**
  * Optional auth query - user may be undefined.
@@ -58,7 +58,7 @@ export const optionalAuthQuery = customQuery(
   customCtx(async (ctx) => ({
     user: await safeGetAuthenticatedUser(ctx),
   })),
-);
+)
 
 // ============================================================================
 // Mutation Wrappers
@@ -80,4 +80,4 @@ export const authMutation = customMutation(
   customCtx(async (ctx) => ({
     user: await requireAuthenticatedUser(ctx),
   })),
-);
+)

@@ -14,27 +14,27 @@ export const USERNAME_MAX_LENGTH = 30
 export const USERNAME_FORMAT_REGEX = /^[a-zA-Z0-9_.]+$/
 
 export const RESERVED_USERNAMES = [
-  'admin',
-  'administrator',
-  'root',
-  'system',
-  'moderator',
-  'mod',
-  'support',
-  'help',
-  'info',
-  'contact',
-  'api',
-  'www',
-  'mail',
-  'email',
-  'test',
-  'null',
-  'undefined',
+  "admin",
+  "administrator",
+  "root",
+  "system",
+  "moderator",
+  "mod",
+  "support",
+  "help",
+  "info",
+  "contact",
+  "api",
+  "www",
+  "mail",
+  "email",
+  "test",
+  "null",
+  "undefined",
 ] as const
 
 export function isReservedUsername(username: string): boolean {
-  return (RESERVED_USERNAMES as readonly string[]).includes(username.toLowerCase())
+  return (RESERVED_USERNAMES as ReadonlyArray<string>).includes(username.toLowerCase())
 }
 
 export function isValidUsernameFormat(username: string): boolean {

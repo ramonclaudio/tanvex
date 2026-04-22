@@ -5,11 +5,11 @@
  * branch on `error.data.code` without parsing messages.
  */
 
-import { ConvexError } from 'convex/values'
+import { ConvexError } from "convex/values"
 
 export const ErrorCode = {
-  UNAUTHENTICATED: 'AUTH_1001',
-  VALIDATION_ERROR: 'VAL_3001',
+  UNAUTHENTICATED: "AUTH_1001",
+  VALIDATION_ERROR: "VAL_3001",
 } as const
 
 type ErrorCodeValue = (typeof ErrorCode)[keyof typeof ErrorCode]
@@ -24,7 +24,7 @@ function createError(code: ErrorCodeValue, message: string, options?: { field?: 
   return new ConvexError({ code, message, ...options } as AppErrorData)
 }
 
-export function authenticationRequired(message = 'Authentication required') {
+export function authenticationRequired(message = "Authentication required") {
   return createError(ErrorCode.UNAUTHENTICATED, message)
 }
 

@@ -6,19 +6,19 @@
  * and are merged in at read time by safeGetAuthenticatedUser in auth.ts.
  */
 
-import { v } from "convex/values";
+import { v } from "convex/values"
 
-import { authMutation, authQuery, optionalAuthQuery } from "./functions";
-import { validationError } from "./errors";
-import { rateLimitWithThrow } from "./rateLimit";
+import type { Id } from "./_generated/dataModel"
+import { authComponent, authUserValidator } from "./auth"
+import { validationError } from "./errors"
+import { authMutation, optionalAuthQuery } from "./functions"
+import { rateLimitWithThrow } from "./rateLimit"
 import {
   paginatedUsersValidator,
   publicUserProfileValidator,
   userProfileUpdateFields,
   validateBio,
-} from "./validators";
-import { authComponent } from "./auth";
-import type { Id } from "./_generated/dataModel";
+} from "./validators"
 
 // ============================================================================
 // Queries
@@ -26,32 +26,38 @@ import type { Id } from "./_generated/dataModel";
 
 /**
  * Get the current authenticated user's profile with resolved avatar URL.
- * Throws if not authenticated.
+ * Returns null when unauthenticated or during the transient JWT rotation
+ * window after /change-password so the client doesn't log AUTH_1001.
+ * The UI falls back to the loader-preloaded user while the new token lands.
  */
-export const getMe = authQuery({
+export const getMe = optionalAuthQuery({
   args: {},
+  returns: v.union(authUserValidator, v.null()),
   handler: async (ctx) => {
-    return ctx.user;
+    return ctx.user ?? null
   },
-});
+})
 
 /**
  * Get a user by app user id with Better Auth identity fields merged in.
- * Returns null if either record is missing.
+ * Accepts an arbitrary string and normalizes it via `ctx.db.normalizeId`,
+ * so untrusted inputs (e.g. HTTP query params) can be passed straight through.
+ * Returns null when the id is malformed or either record is missing.
  */
 export const getUser = optionalAuthQuery({
-  args: { userId: v.id("users") },
+  args: { userId: v.string() },
   returns: v.union(publicUserProfileValidator, v.null()),
   handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user) return null;
+    const id = ctx.db.normalizeId("users", args.userId)
+    if (!id) return null
 
-    const authUser = await authComponent.getAnyUserById(ctx, user.authId);
-    if (!authUser) return null;
+    const user = await ctx.db.get(id)
+    if (!user) return null
 
-    const avatarUrl = user.avatar
-      ? await ctx.storage.getUrl(user.avatar)
-      : (authUser.image ?? null);
+    const authUser = await authComponent.getAnyUserById(ctx, user.authId)
+    if (!authUser) return null
+
+    const avatarUrl = user.avatar ? await ctx.storage.getUrl(user.avatar) : (authUser.image ?? null)
 
     return {
       _id: user._id,
@@ -63,9 +69,9 @@ export const getUser = optionalAuthQuery({
         null,
       avatarUrl,
       bio: user.bio,
-    };
+    }
   },
-});
+})
 
 /**
  * List users (paginated) with Better Auth identity fields merged in.
@@ -78,20 +84,20 @@ export const listUsers = optionalAuthQuery({
   },
   returns: paginatedUsersValidator,
   handler: async (ctx, args) => {
-    const limit = Math.min(Math.max(args.limit ?? 20, 1), 100);
+    const limit = Math.min(Math.max(args.limit ?? 20, 1), 100)
 
     const results = await ctx.db
       .query("users")
       .order("desc")
-      .paginate({ cursor: args.cursor ?? null, numItems: limit });
+      .paginate({ cursor: args.cursor ?? null, numItems: limit })
 
     const page = await Promise.all(
       results.page.map(async (user) => {
-        const authUser = await authComponent.getAnyUserById(ctx, user.authId);
-        if (!authUser) return null;
+        const authUser = await authComponent.getAnyUserById(ctx, user.authId)
+        if (!authUser) return null
         const avatarUrl = user.avatar
           ? await ctx.storage.getUrl(user.avatar)
-          : (authUser.image ?? null);
+          : (authUser.image ?? null)
         return {
           _id: user._id,
           _creationTime: user._creationTime,
@@ -102,17 +108,17 @@ export const listUsers = optionalAuthQuery({
             null,
           avatarUrl,
           bio: user.bio,
-        };
+        }
       }),
-    );
+    )
 
     return {
       page: page.filter((entry): entry is NonNullable<typeof entry> => entry !== null),
       continueCursor: results.continueCursor,
       isDone: results.isDone,
-    };
+    }
   },
-});
+})
 
 // ============================================================================
 // Mutations
@@ -126,23 +132,23 @@ export const updateProfile = authMutation({
   args: userProfileUpdateFields,
   returns: v.id("users"),
   handler: async (ctx, args): Promise<Id<"users">> => {
-    await rateLimitWithThrow(ctx, "userAction", ctx.user._id.toString());
+    await rateLimitWithThrow(ctx, "userAction", ctx.user._id.toString())
 
     if (args.bio !== undefined) {
-      const result = validateBio(args.bio);
+      const result = validateBio(args.bio)
       if (!result.valid) {
-        throw validationError(result.error!, "bio");
+        throw validationError(result.error!, "bio")
       }
     }
 
     await ctx.db.patch(ctx.user._id, {
       bio: args.bio,
       updatedAt: Date.now(),
-    });
+    })
 
-    return ctx.user._id;
+    return ctx.user._id
   },
-});
+})
 
 /**
  * Generate an upload URL for avatar images.
@@ -151,9 +157,9 @@ export const updateProfile = authMutation({
 export const generateAvatarUploadUrl = authMutation({
   args: {},
   handler: async (ctx) => {
-    return await ctx.storage.generateUploadUrl();
+    return await ctx.storage.generateUploadUrl()
   },
-});
+})
 
 /**
  * Update the current user's avatar with a storage id.
@@ -164,20 +170,20 @@ export const updateAvatar = authMutation({
   args: { storageId: v.id("_storage") },
   returns: v.object({ avatarUrl: v.union(v.string(), v.null()) }),
   handler: async (ctx, args) => {
-    await rateLimitWithThrow(ctx, "userAction", ctx.user._id.toString());
+    await rateLimitWithThrow(ctx, "userAction", ctx.user._id.toString())
 
     if (ctx.user.avatar) {
-      await ctx.storage.delete(ctx.user.avatar);
+      await ctx.storage.delete(ctx.user.avatar)
     }
 
     await ctx.db.patch(ctx.user._id, {
       avatar: args.storageId,
       updatedAt: Date.now(),
-    });
+    })
 
-    return { avatarUrl: await ctx.storage.getUrl(args.storageId) };
+    return { avatarUrl: await ctx.storage.getUrl(args.storageId) }
   },
-});
+})
 
 /**
  * Delete the current user's uploaded avatar.
@@ -188,17 +194,17 @@ export const deleteAvatar = authMutation({
   args: {},
   returns: v.object({ success: v.boolean() }),
   handler: async (ctx) => {
-    await rateLimitWithThrow(ctx, "userAction", ctx.user._id.toString());
+    await rateLimitWithThrow(ctx, "userAction", ctx.user._id.toString())
 
     if (ctx.user.avatar) {
-      await ctx.storage.delete(ctx.user.avatar);
+      await ctx.storage.delete(ctx.user.avatar)
     }
 
     await ctx.db.patch(ctx.user._id, {
       avatar: undefined,
       updatedAt: Date.now(),
-    });
+    })
 
-    return { success: true };
+    return { success: true }
   },
-});
+})
