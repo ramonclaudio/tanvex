@@ -14,7 +14,6 @@ dist-ssr
 .output
 .vinxi
 *.tsbuildinfo
-convex/_generated
 __unconfig*
 .agents
 
