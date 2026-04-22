@@ -12,13 +12,7 @@ import Tick02Icon from "@hugeicons/core-free-icons/Tick02Icon"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { useForm } from "@tanstack/react-form"
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
-import {
-  Authenticated,
-  AuthLoading,
-  Unauthenticated,
-  useConvexAuth,
-  useMutation,
-} from "convex/react"
+import { useConvexAuth, useMutation } from "convex/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { z } from "zod"
 
@@ -93,62 +87,84 @@ export const Route = createFileRoute("/sign-in")({
 })
 
 type AuthPhase =
+  // Avatar lives on the phase so it's automatically forgotten when the user
+  // backs out of verification; no risk of uploading it to a different account.
   | { kind: "default" }
-  | { kind: "verify-signup"; email: string }
+  | { kind: "verify-signup"; email: string; avatarFile: File | null }
   | { kind: "otp-sign-in"; email: string }
   | { kind: "reset-request" }
   | { kind: "reset-verify"; email: string }
 
 function SignInPage() {
-  // Phase lives on the page, not inside <Unauthenticated>, because that boundary
-  // unmounts its children every time the Convex websocket revalidates auth.
   const [phase, setPhase] = useState<AuthPhase>({ kind: "default" })
   const { redirect: redirectTo } = Route.useSearch()
   const navigate = useNavigate()
   const { isAuthenticated, isLoading } = useConvexAuth()
 
-  // Any successful auth flip (password, OTP, email verify, auto-sign-in after
-  // verification) while the page is mounted. `beforeLoad` only redirects on
-  // fresh navigations, so this effect handles the in-session transition.
+  const generateUploadUrl = useMutation(api.users.generateAvatarUploadUrl)
+  const updateAvatar = useMutation(api.users.updateAvatar)
+
+  // Auth flipped to authenticated: finish the pending avatar upload (if any)
+  // then navigate. `beforeLoad` only redirects on fresh navigations, so this
+  // effect handles the in-session transition (password sign-in, OTP sign-in,
+  // or the autoSignInAfterVerification flip during email verification).
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      void navigate({ to: redirectTo ?? "/" })
+    if (isLoading || !isAuthenticated) return undefined
+    const avatarFile = phase.kind === "verify-signup" ? phase.avatarFile : null
+    let cancelled = false
+    void (async () => {
+      if (avatarFile) {
+        try {
+          const uploadUrl = await generateUploadUrl()
+          const res = await fetch(uploadUrl, {
+            method: "POST",
+            headers: { "Content-Type": avatarFile.type },
+            body: avatarFile,
+          })
+          if (res.ok) {
+            const { storageId } = await res.json()
+            await updateAvatar({ storageId })
+          }
+        } catch (err) {
+          console.error("Failed to upload avatar after sign-up", err)
+        }
+      }
+      if (!cancelled) void navigate({ to: redirectTo ?? "/" })
+    })()
+    return () => {
+      cancelled = true
     }
-  }, [isLoading, isAuthenticated, redirectTo, navigate])
+  }, [
+    isLoading,
+    isAuthenticated,
+    phase,
+    redirectTo,
+    navigate,
+    generateUploadUrl,
+    updateAvatar,
+  ])
 
   const resetToDefault = useCallback(() => setPhase({ kind: "default" }), [])
 
-  // OTP forms render ABOVE the auth boundaries. Better Auth triggers a
-  // /get-session refetch right after signUp.email resolves; that refetch flips
-  // isLoading true while data is still null, which would unmount <Unauthenticated>
-  // and drop the user back onto the sign-in form mid-flow.
-  if (phase.kind !== "default") {
-    return (
-      <main
-        id="main"
-        className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-sm flex-col gap-6 px-6 py-16 sm:py-24"
-      >
-        <OTPFlows phase={phase} setPhase={setPhase} resetToSignIn={resetToDefault} />
-      </main>
-    )
-  }
-
+  // UPSTREAM(convex-better-auth#isloading-latch): render the form above the
+  // auth boundaries. Better Auth refetches /get-session on window focus and
+  // right after signUp.email resolves; that refetch flips Convex's isLoading
+  // true while data is still null. If the form lived under <Unauthenticated>,
+  // the boundary would unmount it on every refetch and drop the user's input,
+  // or swap them back onto the sign-in form mid sign-up flow. Revisit once
+  // the latch ships upstream.
   return (
     <main
       id="main"
       className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-sm flex-col gap-6 px-6 py-16 sm:py-24"
     >
-      <AuthLoading>
+      {phase.kind !== "default" ? (
+        <OTPFlows phase={phase} setPhase={setPhase} resetToSignIn={resetToDefault} />
+      ) : isAuthenticated ? (
         <Spinner />
-      </AuthLoading>
-
-      <Authenticated>
-        <Spinner />
-      </Authenticated>
-
-      <Unauthenticated>
+      ) : (
         <UnauthedView setPhase={setPhase} />
-      </Unauthenticated>
+      )}
     </main>
   )
 }
@@ -173,9 +189,6 @@ function UnauthedView({ setPhase }: { setPhase: (phase: AuthPhase) => void }) {
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
-
-  const generateUploadUrl = useMutation(api.users.generateAvatarUploadUrl)
-  const updateAvatar = useMutation(api.users.updateAvatar)
 
   const checkUsernameAvailability = useCallback(async (username: string) => {
     if (!username || !isValidUsernameFormat(username)) {
@@ -236,7 +249,7 @@ function UnauthedView({ setPhase }: { setPhase: (phase: AuthPhase) => void }) {
               email: value.email,
               type: "email-verification",
             })
-            setPhase({ kind: "verify-signup", email: value.email })
+            setPhase({ kind: "verify-signup", email: value.email, avatarFile: null })
             return
           }
           setServerError(result.error.message || "Sign in failed")
@@ -301,25 +314,9 @@ function UnauthedView({ setPhase }: { setPhase: (phase: AuthPhase) => void }) {
           setServerError(result.error.message || "Sign up failed")
           return
         }
-
-        if (avatarFile) {
-          try {
-            const uploadUrl = await generateUploadUrl()
-            const uploadResult = await fetch(uploadUrl, {
-              method: "POST",
-              headers: { "Content-Type": avatarFile.type },
-              body: avatarFile,
-            })
-            if (uploadResult.ok) {
-              const { storageId } = await uploadResult.json()
-              await updateAvatar({ storageId })
-            }
-          } catch {
-            console.error("Failed to upload avatar during sign-up")
-          }
-        }
-
-        setPhase({ kind: "verify-signup", email: value.email })
+        // Stash the avatar on the phase; the parent uploads it once email
+        // verification mints a session (authMutation would reject before that).
+        setPhase({ kind: "verify-signup", email: value.email, avatarFile })
       } catch {
         setServerError("An error occurred during sign up")
       }
