@@ -156,15 +156,17 @@ function SignInPage() {
   return (
     <main
       id="main"
-      className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-sm flex-col gap-6 px-6 py-16 sm:py-24"
+      className="mx-auto min-h-[calc(100vh-4rem)] w-full max-w-5xl px-6 py-16 sm:py-24"
     >
-      {phase.kind !== "default" ? (
-        <OTPFlows phase={phase} setPhase={setPhase} resetToSignIn={resetToDefault} />
-      ) : isAuthenticated ? (
-        <Spinner />
-      ) : (
-        <UnauthedView setPhase={setPhase} />
-      )}
+      <div className="mx-auto flex w-full max-w-sm flex-col gap-6">
+        {phase.kind !== "default" ? (
+          <OTPFlows phase={phase} setPhase={setPhase} resetToSignIn={resetToDefault} />
+        ) : isAuthenticated ? (
+          <Spinner />
+        ) : (
+          <UnauthedView setPhase={setPhase} />
+        )}
+      </div>
     </main>
   )
 }
