@@ -8,7 +8,7 @@ Every TanStack Start starter on GitHub ships last year's choices, and most don't
 
 Email + password auth with username sign-in and OTP verification through Resend. User profiles with avatar uploads to Convex storage. Rate limits on auth and API endpoints. SSR auth that works during server render. On top of Vite 8 with Rolldown+Oxc, Tailwind v4, shadcn/ui `base-luma` on Base UI `@base-ui/react` primitives, Oxlint and Oxfmt from the Oxc toolchain.
 
-Bun runtime. TanStack Start + Convex + Better Auth + React 19 + TypeScript 6 + Tailwind v4 + Zod v4.
+TanStack Start + Convex + Better Auth + React 19 + TypeScript 6 + Tailwind v4 + Zod v4. Bun-powered scripts.
 
 ## Install
 
@@ -54,7 +54,7 @@ Flags: `--local` (Docker), `--fresh` (new deployment), `--version`, `--help`.
 - Vitest 4 + `@testing-library/react` + jsdom
 - Zod v4 on the client, Convex validators on the backend
 - Sonner toasts, theme provider, web vitals reporter
-- Bun as runtime and package manager
+- Bun as package manager and script runner (setup CLI uses `Bun.spawn`, `Bun.$`, `Bun.file`)
 
 ## What's wired
 

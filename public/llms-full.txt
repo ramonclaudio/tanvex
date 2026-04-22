@@ -6,9 +6,9 @@
 
 A production-ready TanStack Start template wired with Convex + Better Auth +
 Resend: SSR via Nitro 3, React 19, TypeScript 6, Tailwind v4, shadcn/ui
-base-luma theme on Base UI primitives, Vitest 4 + jsdom, Oxlint + Oxfmt, Bun
-runtime. One command sets up the Convex deployment, auth secret, email
-sender, and pushes schema.
+base-luma theme on Base UI primitives, Vitest 4 + jsdom, Oxlint + Oxfmt. One
+command sets up the Convex deployment, auth secret, email sender, and pushes
+schema.
 
 Unlike other TanStack + shadcn starters, this one ships:
 
@@ -51,7 +51,7 @@ Unlike other TanStack + shadcn starters, this one ships:
 - **Vitest 4**: jsdom environment + `@testing-library/react`
 - **Sonner**: toast primitive
 - **web-vitals**: lazy-loaded after hydration, reports CLS / FCP / INP / LCP / TTFB
-- **Bun**: runtime and package manager
+- **Bun**: package manager and script runner; setup CLI uses Bun APIs (`Bun.spawn`, `Bun.$`, `Bun.file`)
 
 ## Auth flows
 

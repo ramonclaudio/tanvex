@@ -18,7 +18,7 @@
 - Vitest 4 + @testing-library/react + jsdom
 - Zod v4 on the client, Convex validators on the backend
 - Sonner toasts, theme provider with no-flash script, web vitals reporter
-- Bun as runtime and package manager
+- Bun as package manager and script runner (setup CLI uses `Bun.spawn`, `Bun.$`, `Bun.file`)
 
 ## Auth
 
