@@ -49,11 +49,12 @@ function ProfilePage() {
   const { isAuthenticated, isLoading } = useConvexAuth()
   const navigate = useNavigate()
 
-  // UPSTREAM(convex-better-auth#isloading-latch): no render gate on
-  // `isLoading`. Better Auth spikes isPending during every refetch, which
-  // would otherwise unmount ProfileContent mid-edit and wipe formData/
-  // passwordForm (especially on changePassword({ revokeOtherSessions: true })
-  // session rotation). In-session sign-out or expiry flips isAuthenticated
+  // UPSTREAM(convex-better-auth#isloading-latch): gate on `isAuthenticated`
+  // (which stays stable through Better Auth's isPending spikes on session
+  // refetch) instead of `isLoading` (which flips true on every refetch and
+  // would otherwise unmount ProfileContent mid-edit). The `preloadedUser &&
+  // isLoading` branch covers the SSR hydration window before the client-side
+  // session resolves. In-session sign-out or expiry flips isAuthenticated
   // false; the `_authed` beforeLoad only runs on navigation, so fall back
   // to a client-side redirect. Revisit once the latch ships upstream.
   useEffect(() => {
@@ -64,7 +65,7 @@ function ProfilePage() {
 
   return (
     <main id="main" className="mx-auto w-full max-w-2xl px-6 py-12 sm:py-16">
-      {preloadedUser || isAuthenticated ? (
+      {isAuthenticated || (preloadedUser && isLoading) ? (
         <ProfileContent preloadedUser={preloadedUser} />
       ) : (
         <ProfileSkeleton />
