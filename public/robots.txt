@@ -19,4 +19,4 @@ User-agent: anthropic-ai
 User-agent: cohere-ai
 Disallow: /
 
-Sitemap: https://tanvex.vercel.app/sitemap.xml
+Sitemap: https://tanvex-demo.vercel.app/sitemap.xml

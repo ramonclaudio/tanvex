@@ -1,4 +1,4 @@
-export const SITE_URL = import.meta.env.VITE_SITE_URL ?? "https://tanvex.vercel.app"
+export const SITE_URL = import.meta.env.VITE_SITE_URL ?? "https://tanvex-demo.vercel.app"
 export const SITE_NAME = "tanvex"
 export const SITE_TITLE = "tanvex: TanStack Start on Vite 8 + Oxc, Tailwind v4, Base UI"
 export const SITE_DESCRIPTION =

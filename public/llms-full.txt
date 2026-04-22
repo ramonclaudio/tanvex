@@ -169,7 +169,7 @@ Server-side (on the Convex deployment, set via `bunx convex env set`):
 
 ## Lighthouse (production, desktop, 5 runs p50)
 
-Measured against https://tanvex.vercel.app:
+Measured against https://tanvex-demo.vercel.app:
 
 - Performance: 100
 - Accessibility: 100
