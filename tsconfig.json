@@ -1,6 +1,6 @@
 {
-  "include": ["**/*.ts", "**/*.tsx", "eslint.config.js", "prettier.config.js", "vite.config.js"],
-  
+  "include": ["**/*.ts", "**/*.tsx"],
+
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",
@@ -11,7 +11,8 @@
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": false,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
     "noEmit": true,
 
     /* Linting */
@@ -21,6 +22,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+    "allowJs": true,
     "paths": {
       "@/*": ["./src/*"],
       "@convex/*": ["./convex/*"]
