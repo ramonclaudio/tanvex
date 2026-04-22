@@ -1,0 +1,57 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "import", "react", "jsx-a11y", "oxc", "unicorn", "promise", "vitest"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "env": {
+    "browser": true,
+    "es2024": true
+  },
+  "settings": {
+    "react": {
+      "version": "19.2",
+      "linkComponents": [{ "name": "Link", "attributes": ["to"] }]
+    },
+    "jsx-a11y": {
+      "components": {
+        "Button": "button",
+        "Input": "input"
+      }
+    }
+  },
+  "ignorePatterns": ["**/routeTree.gen.ts", "**/coverage/**"],
+  "options": {
+    "reportUnusedDisableDirectives": "error",
+    "typeAware": true
+  },
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "react/rules-of-hooks": "error",
+    "import/no-cycle": ["error", { "maxDepth": 3 }],
+    "typescript/consistent-type-imports": ["error", { "prefer": "type-imports" }],
+    "typescript/array-type": ["error", { "default": "generic", "readonly": "generic" }],
+    "typescript/ban-ts-comment": [
+      "error",
+      { "ts-expect-error": false, "ts-ignore": "allow-with-description" }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/components/ui/**"],
+      "rules": {
+        "jsx-a11y/click-events-have-key-events": "off",
+        "jsx-a11y/label-has-associated-control": "off",
+        "jsx-a11y/no-static-element-interactions": "off",
+        "typescript/no-unsafe-type-assertion": "off"
+      }
+    },
+    {
+      "files": ["src/routes/sign-in.tsx", "src/routes/_authed/**"],
+      "rules": {
+        "react/no-children-prop": "off"
+      }
+    }
+  ]
+}
