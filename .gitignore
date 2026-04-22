@@ -2,15 +2,23 @@ node_modules
 .DS_Store
 dist
 dist-ssr
+*.local
 .env
 .env.local
 .env.local.*
 .nitro
-.output
 .tanstack
 .vite
 .cache
-.vinxi
 .wrangler
+.output
+.vinxi
 *.tsbuildinfo
 convex/_generated
+__unconfig*
+.agents
+
+# keep shared VS Code recommendations even when user's global ignores .vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+.vercel
