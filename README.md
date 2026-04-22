@@ -1,6 +1,7 @@
 # tanvex
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Live demo](https://img.shields.io/badge/demo-tanvex--demo.vercel.app-000?logo=vercel)](https://tanvex-demo.vercel.app)
 
 ![tanvex](public/og.png)
 
@@ -236,7 +237,7 @@ vite.config.ts                     # Vite, Nitro, security headers
 Search and replace the placeholder URLs, or set `VITE_SITE_URL` in `.env.local` and let the SEO helper pick it up.
 
 ```bash
-grep -r "ramonclaudio/tanvex\|tanvex\.vercel\.app" -l
+grep -r "ramonclaudio/tanvex\|tanvex-demo\.vercel\.app" -l
 ```
 
 Files to update:
