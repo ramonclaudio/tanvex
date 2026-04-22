@@ -5,7 +5,7 @@
  * Schema-level field validators live in schema.ts.
  */
 
-import { v } from 'convex/values'
+import { v } from "convex/values"
 
 /**
  * Paginated response structure.
@@ -34,7 +34,7 @@ export const userProfileUpdateFields = {
  * Auth identity fields (name, username).
  */
 export const publicUserProfileValidator = v.object({
-  _id: v.id('users'),
+  _id: v.id("users"),
   _creationTime: v.number(),
   name: v.string(),
   username: v.union(v.string(), v.null()),

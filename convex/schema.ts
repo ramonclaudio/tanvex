@@ -1,5 +1,5 @@
-import { defineSchema, defineTable } from 'convex/server'
-import { v } from 'convex/values'
+import { defineSchema, defineTable } from "convex/server"
+import { v } from "convex/values"
 
 // Rate limiting uses @convex-dev/rate-limiter component which manages its own tables.
 // Better Auth handles identity tables (user, session, account, verification) via @convex-dev/better-auth.
@@ -13,7 +13,7 @@ import { v } from 'convex/values'
 export const userFields = {
   authId: v.string(), // FK to the Better Auth user id (indexed for efficient lookup)
   bio: v.optional(v.string()),
-  avatar: v.optional(v.id('_storage')), // Convex storage id for uploaded avatars
+  avatar: v.optional(v.id("_storage")), // Convex storage id for uploaded avatars
   createdAt: v.number(),
   updatedAt: v.number(),
 }
@@ -26,7 +26,5 @@ export default defineSchema({
     avatar: userFields.avatar,
     createdAt: userFields.createdAt,
     updatedAt: userFields.updatedAt,
-  })
-    .index('authId', ['authId'])
-    .index('createdAt', ['createdAt']),
+  }).index("authId", ["authId"]),
 })

@@ -1,0 +1,17 @@
+diff --git a/core-free-icons.d.ts b/core-free-icons.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..fa438e9862ece5e51a8dc5f2270bdd9e66afeca9
+--- /dev/null
++++ b/core-free-icons.d.ts
+@@ -0,0 +1,4 @@
++declare module '@hugeicons/core-free-icons/*' {
++  const icon: import('./dist/types/HugeiconsIcon').IconSvgElement;
++  export default icon;
++}
+diff --git a/dist/types/index.d.ts b/dist/types/index.d.ts
+index 6a73d1ca857561efd5eebdc0dc13f8c5c124e25d..f4c710bacd96f341be6413d1e469e8c532ab2635 100644
+--- a/dist/types/index.d.ts
++++ b/dist/types/index.d.ts
+@@ -1 +1,2 @@
++/// <reference path="../../core-free-icons.d.ts" />
+ export { default as HugeiconsIcon, HugeiconsIconProps, HugeiconsProps, IconSvgElement } from './HugeiconsIcon.js';

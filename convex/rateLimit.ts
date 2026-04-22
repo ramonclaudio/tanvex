@@ -9,9 +9,10 @@
  * @see https://www.convex.dev/components/rate-limiter
  */
 
-import { MINUTE, RateLimiter } from '@convex-dev/rate-limiter'
-import { components } from './_generated/api'
-import type { MutationCtx } from './_generated/server'
+import { MINUTE, RateLimiter } from "@convex-dev/rate-limiter"
+
+import { components } from "./_generated/api"
+import type { MutationCtx } from "./_generated/server"
 
 /**
  * Rate limiter instance using the component.
@@ -20,7 +21,7 @@ import type { MutationCtx } from './_generated/server'
 export const rateLimiter = new RateLimiter(components.rateLimiter, {
   // Read operations: permissive for good UX, sharded for throughput
   apiRead: {
-    kind: 'token bucket',
+    kind: "token bucket",
     rate: 100,
     period: MINUTE,
     capacity: 20,
@@ -29,7 +30,7 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
 
   // Write operations: stricter to prevent abuse
   apiWrite: {
-    kind: 'token bucket',
+    kind: "token bucket",
     rate: 30,
     period: MINUTE,
     capacity: 10,
@@ -37,7 +38,7 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
 
   // General authenticated user actions
   userAction: {
-    kind: 'token bucket',
+    kind: "token bucket",
     rate: 60,
     period: MINUTE,
     capacity: 10,
@@ -45,7 +46,7 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
 
   // For operations that MUST eventually succeed (use with reserve: true)
   criticalAction: {
-    kind: 'token bucket',
+    kind: "token bucket",
     rate: 10,
     period: MINUTE,
     capacity: 5,
@@ -53,7 +54,7 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   },
 })
 
-export type RateLimitName = 'apiRead' | 'apiWrite' | 'userAction' | 'criticalAction'
+export type RateLimitName = "apiRead" | "apiWrite" | "userAction" | "criticalAction"
 
 /**
  * Apply a rate limit and throw automatically if exceeded.

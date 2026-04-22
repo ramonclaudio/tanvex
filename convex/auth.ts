@@ -1,25 +1,24 @@
-import { createClient } from "@convex-dev/better-auth";
-import { convex } from "@convex-dev/better-auth/plugins";
-import { betterAuth } from "better-auth/minimal";
-import { emailOTP, username } from "better-auth/plugins";
+import { createClient } from "@convex-dev/better-auth"
+import type { AuthFunctions, GenericCtx } from "@convex-dev/better-auth"
+import { convex } from "@convex-dev/better-auth/plugins"
+import type { BetterAuthOptions } from "better-auth"
+import { betterAuth } from "better-auth/minimal"
+import { emailOTP, username } from "better-auth/plugins"
+import { v } from "convex/values"
 
-import { v } from "convex/values";
-import { components, internal } from "./_generated/api";
-import authConfig from "./auth.config";
-import { internalAction, query } from "./_generated/server";
+import { components, internal } from "./_generated/api"
+import type { DataModel, Doc } from "./_generated/dataModel"
+import { internalAction, query } from "./_generated/server"
+import type { MutationCtx, QueryCtx } from "./_generated/server"
+import authConfig from "./auth.config"
 import {
   USERNAME_FORMAT_REGEX,
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
   isReservedUsername,
-} from "./constants";
-import { sendAuthOTP } from "./email";
-import { authenticationRequired } from "./errors";
-
-import type { MutationCtx, QueryCtx } from "./_generated/server";
-import type { DataModel, Doc } from "./_generated/dataModel";
-import type { BetterAuthOptions } from "better-auth";
-import type { AuthFunctions, GenericCtx } from "@convex-dev/better-auth";
+} from "./constants"
+import { sendAuthOTP } from "./email"
+import { authenticationRequired } from "./errors"
 
 /**
  * Get the site URL from environment.
@@ -27,19 +26,19 @@ import type { AuthFunctions, GenericCtx } from "@convex-dev/better-auth";
  * Allows the module to load even if the env var is missing (e.g. during codegen).
  */
 function getSiteUrl(): string | undefined {
-  const url = process.env.SITE_URL;
+  const url = process.env.SITE_URL
   if (!url) {
     console.warn(
       "[Auth] SITE_URL environment variable is not set. " +
         "This is required for auth redirects to work correctly. " +
         "Set it in your Convex dashboard or .env.local file.",
-    );
-    return undefined;
+    )
+    return undefined
   }
-  return url;
+  return url
 }
 
-const authFunctions: AuthFunctions = internal.auth;
+const authFunctions: AuthFunctions = internal.auth
 
 /**
  * Get the app user doc by Better Auth id, using the indexed lookup.
@@ -51,7 +50,7 @@ export async function getUserByAuthId(
   return await ctx.db
     .query("users")
     .withIndex("authId", (q) => q.eq("authId", authId))
-    .unique();
+    .unique()
 }
 
 /**
@@ -64,16 +63,16 @@ export async function getUserByAuthId(
  * provider avatar).
  */
 export type AuthUser = Doc<"users"> & {
-  authUserId: string;
-  email: string;
-  name: string;
-  emailVerified: boolean;
-  image: string | null;
-  username: string | null;
-  displayUsername: string | null;
-  avatarUrl: string | null;
-  hasUploadedAvatar: boolean;
-};
+  authUserId: string
+  email: string
+  name: string
+  emailVerified: boolean
+  image: string | null
+  username: string | null
+  displayUsername: string | null
+  avatarUrl: string | null
+  hasUploadedAvatar: boolean
+}
 
 // The component client has methods needed for integrating Convex with Better Auth,
 // as well as helper methods for general use.
@@ -88,23 +87,24 @@ export const authComponent = createClient<DataModel>(components.betterAuth, {
           authId: authUser._id,
           createdAt: Date.now(),
           updatedAt: Date.now(),
-        });
+        })
       },
       onDelete: async (ctx, authUser) => {
-        const user = await getUserByAuthId(ctx, authUser._id);
-        if (user) {
-          await ctx.db.delete(user._id);
-        }
+        const user = await getUserByAuthId(ctx, authUser._id)
+        if (!user) return
+        // Free the avatar blob before dropping the row so we don't leak storage.
+        if (user.avatar) await ctx.storage.delete(user.avatar)
+        await ctx.db.delete(user._id)
       },
     },
   },
-});
+})
 
 // Export trigger handlers - these become available at internal.auth
-export const { onCreate, onDelete } = authComponent.triggersApi();
+export const { onCreate, onDelete } = authComponent.triggersApi()
 
 // Export client API for AuthBoundary and other client-side auth checks
-export const { getAuthUser } = authComponent.clientApi();
+export const { getAuthUser } = authComponent.clientApi()
 
 export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
   ({
@@ -170,7 +170,7 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
           verifyCurrentEmail: true,
         },
         sendVerificationOTP: async ({ email, otp, type }) => {
-          await sendAuthOTP(ctx, { email, otp, type });
+          await sendAuthOTP(ctx, { email, otp, type })
         },
       }),
       username({
@@ -178,14 +178,14 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
         maxUsernameLength: USERNAME_MAX_LENGTH,
         validationOrder: { username: "post-normalization" },
         usernameValidator: (normalized) => {
-          if (isReservedUsername(normalized)) return false;
-          return USERNAME_FORMAT_REGEX.test(normalized);
+          if (isReservedUsername(normalized)) return false
+          return USERNAME_FORMAT_REGEX.test(normalized)
         },
       }),
     ],
-  }) satisfies BetterAuthOptions;
+  }) satisfies BetterAuthOptions
 
-export const createAuth = (ctx: GenericCtx<DataModel>) => betterAuth(createAuthOptions(ctx));
+export const createAuth = (ctx: GenericCtx<DataModel>) => betterAuth(createAuthOptions(ctx))
 
 /**
  * Safely get the current authenticated user. Returns undefined if not
@@ -195,17 +195,17 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => betterAuth(createAuthO
 export async function safeGetAuthenticatedUser(
   ctx: QueryCtx | MutationCtx,
 ): Promise<AuthUser | undefined> {
-  const authUser = await authComponent.safeGetAuthUser(ctx);
-  if (!authUser) return undefined;
+  const authUser = await authComponent.safeGetAuthUser(ctx)
+  if (!authUser) return undefined
 
-  const user = await getUserByAuthId(ctx, authUser._id);
-  if (!user) return undefined;
+  const user = await getUserByAuthId(ctx, authUser._id)
+  if (!user) return undefined
 
   // Resolve avatar: user upload takes precedence over Better Auth image
-  const hasUploadedAvatar = !!user.avatar;
+  const hasUploadedAvatar = !!user.avatar
   const avatarUrl = hasUploadedAvatar
     ? await ctx.storage.getUrl(user.avatar!)
-    : (authUser.image ?? null);
+    : (authUser.image ?? null)
 
   return {
     ...user,
@@ -218,18 +218,18 @@ export async function safeGetAuthenticatedUser(
     displayUsername: (authUser as { displayUsername?: string | null }).displayUsername ?? null,
     avatarUrl,
     hasUploadedAvatar,
-  };
+  }
 }
 
 /**
  * Get the current authenticated user, throwing if not authenticated.
  */
 export async function requireAuthenticatedUser(ctx: QueryCtx | MutationCtx): Promise<AuthUser> {
-  const user = await safeGetAuthenticatedUser(ctx);
+  const user = await safeGetAuthenticatedUser(ctx)
   if (!user) {
-    throw authenticationRequired();
+    throw authenticationRequired()
   }
-  return user;
+  return user
 }
 
 /**
@@ -252,7 +252,7 @@ export const authUserValidator = v.object({
   displayUsername: v.union(v.string(), v.null()),
   avatarUrl: v.union(v.string(), v.null()),
   hasUploadedAvatar: v.boolean(),
-});
+})
 
 // ============================================================================
 // Queries
@@ -269,9 +269,9 @@ export const getCurrentUser = query({
   args: {},
   returns: v.union(authUserValidator, v.null()),
   handler: async (ctx) => {
-    return (await safeGetAuthenticatedUser(ctx)) ?? null;
+    return (await safeGetAuthenticatedUser(ctx)) ?? null
   },
-});
+})
 
 /**
  * Check if the current user has a password-based account.
@@ -282,13 +282,13 @@ export const hasPassword = query({
   args: {},
   returns: v.boolean(),
   handler: async (ctx) => {
-    const user = await safeGetAuthenticatedUser(ctx);
-    if (!user) return false;
-    const { auth, headers } = await authComponent.getAuth(createAuth, ctx);
-    const accounts = await auth.api.listUserAccounts({ headers });
-    return accounts.some((account) => account.providerId === "credential");
+    const user = await safeGetAuthenticatedUser(ctx)
+    if (!user) return false
+    const { auth, headers } = await authComponent.getAuth(createAuth, ctx)
+    const accounts = await auth.api.listUserAccounts({ headers })
+    return accounts.some((account) => account.providerId === "credential")
   },
-});
+})
 
 /**
  * Rotate JWKS keys for JWT signing.
@@ -298,7 +298,7 @@ export const hasPassword = query({
 export const rotateKeys = internalAction({
   args: {},
   handler: async (ctx) => {
-    const auth = createAuth(ctx);
-    return auth.api.rotateKeys();
+    const auth = createAuth(ctx)
+    return auth.api.rotateKeys()
   },
-});
+})

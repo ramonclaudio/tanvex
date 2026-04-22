@@ -1,153 +1,90 @@
-import { ScriptOnce } from '@tanstack/react-router'
-import { createClientOnlyFn, createIsomorphicFn } from '@tanstack/react-start'
-import * as React from 'react'
-import { createContext, useEffect, useState } from 'react'
-import { z } from 'zod'
+import { ScriptOnce } from "@tanstack/react-router"
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 
-const themeModeSchema = z.enum(['light', 'dark', 'auto'])
-const resolvedThemeSchema = z.enum(['light', 'dark'])
-const themeKey = 'vite-ui-theme'
-
-type ThemeMode = z.infer<typeof themeModeSchema>
-type ResolvedTheme = z.infer<typeof resolvedThemeSchema>
-
-const getStoredThemeMode = createIsomorphicFn()
-  .server((): ThemeMode => 'auto')
-  .client((): ThemeMode => {
-    try {
-      const storedTheme = localStorage.getItem(themeKey)
-      return themeModeSchema.parse(storedTheme)
-    } catch {
-      return 'auto'
-    }
-  })
-
-const setStoredThemeMode = createClientOnlyFn((theme: ThemeMode) => {
-  try {
-    const parsedTheme = themeModeSchema.parse(theme)
-    localStorage.setItem(themeKey, parsedTheme)
-  } catch {}
-})
-
-const getSystemTheme = createIsomorphicFn()
-  .server((): ResolvedTheme => 'light')
-  .client((): ResolvedTheme => {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light'
-  })
-
-const updateThemeClass = createClientOnlyFn((themeMode: ThemeMode) => {
-  const root = document.documentElement
-  root.classList.remove('light', 'dark', 'auto')
-  const newTheme = themeMode === 'auto' ? getSystemTheme() : themeMode
-  root.classList.add(newTheme)
-
-  if (themeMode === 'auto') {
-    root.classList.add('auto')
-  }
-
-  // Update meta theme-color from CSS variable
-  const metaThemeColor = document.querySelector('meta[name="theme-color"]')
-  if (metaThemeColor) {
-    const bgColor = getComputedStyle(root).getPropertyValue('--background').trim()
-    if (bgColor) {
-      metaThemeColor.setAttribute('content', `oklch(${bgColor})`)
-    }
-  }
-})
-
-const setupPreferredListener = createClientOnlyFn(() => {
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-  const handler = () => updateThemeClass('auto')
-  mediaQuery.addEventListener('change', handler)
-  return () => mediaQuery.removeEventListener('change', handler)
-})
-
-const getNextTheme = createClientOnlyFn((current: ThemeMode): ThemeMode => {
-  const themes: Array<ThemeMode> =
-    getSystemTheme() === 'dark'
-      ? ['auto', 'light', 'dark']
-      : ['auto', 'dark', 'light']
-  return themes[(themes.indexOf(current) + 1) % themes.length]
-})
-
-// Script to prevent flash of wrong theme - runs before React hydration
-const themeDetectorScript = (function () {
-  function themeFn() {
-    try {
-      const storedTheme = localStorage.getItem('vite-ui-theme') || 'auto'
-      const validTheme = ['light', 'dark', 'auto'].includes(storedTheme)
-        ? storedTheme
-        : 'auto'
-
-      if (validTheme === 'auto') {
-        const autoTheme = window.matchMedia('(prefers-color-scheme: dark)')
-          .matches
-          ? 'dark'
-          : 'light'
-        document.documentElement.classList.add(autoTheme, 'auto')
-      } else {
-        document.documentElement.classList.add(validTheme)
-      }
-    } catch {
-      const autoTheme = window.matchMedia('(prefers-color-scheme: dark)')
-        .matches
-        ? 'dark'
-        : 'light'
-      document.documentElement.classList.add(autoTheme, 'auto')
-    }
-  }
-  return `(${themeFn.toString()})();`
-})()
-
-type ThemeContextProps = {
-  themeMode: ThemeMode
-  resolvedTheme: ResolvedTheme
-  setTheme: (theme: ThemeMode) => void
-  toggleMode: () => void
-}
-
-const ThemeContext = createContext<ThemeContextProps | undefined>(undefined)
+type Theme = "dark" | "light" | "system"
 
 type ThemeProviderProps = {
   children: React.ReactNode
+  defaultTheme?: Theme
+  storageKey?: string
 }
 
-export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [themeMode, setThemeMode] = useState<ThemeMode>(getStoredThemeMode)
+type ThemeProviderState = {
+  theme: Theme
+  setTheme: (theme: Theme) => void
+}
+
+function buildThemeScript(storageKey: string, defaultTheme: Theme) {
+  return `(function(){try{var k=${JSON.stringify(storageKey)};var d=${JSON.stringify(defaultTheme)};var t=localStorage.getItem(k);if(t!=='light'&&t!=='dark'&&t!=='system'){t=d}var m=matchMedia('(prefers-color-scheme: dark)').matches;var r=t==='system'?(m?'dark':'light'):t;var e=document.documentElement;e.classList.add(r);e.style.colorScheme=r}catch(e){}})();`
+}
+
+const ThemeProviderContext = createContext<ThemeProviderState>({
+  theme: "system",
+  setTheme: () => {},
+})
+
+function resolveTheme(theme: Theme): "dark" | "light" {
+  if (theme !== "system") return theme
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+}
+
+function applyTheme(resolved: "dark" | "light") {
+  const root = document.documentElement
+  root.classList.remove("light", "dark")
+  root.classList.add(resolved)
+  root.style.colorScheme = resolved
+}
+
+function isTheme(value: unknown): value is Theme {
+  return value === "light" || value === "dark" || value === "system"
+}
+
+export function ThemeProvider({
+  children,
+  defaultTheme = "system",
+  storageKey = "theme",
+}: ThemeProviderProps) {
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === "undefined") return defaultTheme
+    const stored = localStorage.getItem(storageKey)
+    return isTheme(stored) ? stored : defaultTheme
+  })
+
+  const mounted = useRef(false)
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true
+      return
+    }
+    applyTheme(resolveTheme(theme))
+  }, [theme])
 
   useEffect(() => {
-    if (themeMode !== 'auto') return
-    return setupPreferredListener()
-  }, [themeMode])
+    if (theme !== "system") return undefined
+    const media = window.matchMedia("(prefers-color-scheme: dark)")
+    const onChange = () => applyTheme(media.matches ? "dark" : "light")
+    media.addEventListener("change", onChange)
+    return () => media.removeEventListener("change", onChange)
+  }, [theme])
 
-  const resolvedTheme = themeMode === 'auto' ? getSystemTheme() : themeMode
+  const setTheme = useCallback(
+    (next: Theme) => {
+      localStorage.setItem(storageKey, next)
+      setThemeState(next)
+    },
+    [storageKey],
+  )
 
-  const setTheme = (newTheme: ThemeMode) => {
-    setThemeMode(newTheme)
-    setStoredThemeMode(newTheme)
-    updateThemeClass(newTheme)
-  }
-
-  const toggleMode = () => {
-    setTheme(getNextTheme(themeMode))
-  }
+  const value = useMemo(() => ({ theme, setTheme }), [theme, setTheme])
 
   return (
-    <ThemeContext.Provider
-      value={{ themeMode, resolvedTheme, setTheme, toggleMode }}
-    >
-      <ScriptOnce children={themeDetectorScript} />
+    <ThemeProviderContext value={value}>
+      <ScriptOnce>{buildThemeScript(storageKey, defaultTheme)}</ScriptOnce>
       {children}
-    </ThemeContext.Provider>
+    </ThemeProviderContext>
   )
 }
 
-export const useTheme = () => {
-  const context = React.useContext(ThemeContext)
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider')
-  }
-  return context
+export function useTheme() {
+  return useContext(ThemeProviderContext)
 }

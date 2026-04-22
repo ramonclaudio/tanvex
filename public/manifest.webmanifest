@@ -1,0 +1,44 @@
+{
+  "id": "/",
+  "name": "tanvex",
+  "short_name": "tanvex",
+  "description": "TanStack Start on Vite 8 + Oxc. Tailwind v4 + shadcn base-luma on Base UI.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "categories": ["developer", "productivity", "utilities"],
+  "launch_handler": { "client_mode": ["navigate-existing", "auto"] },
+  "icons": [
+    { "src": "/icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any" },
+    { "src": "/logo192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "/logo512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "/icon-maskable.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" },
+    {
+      "src": "/icon-mono-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "monochrome"
+    },
+    { "src": "/icon-mono.png", "type": "image/png", "sizes": "512x512", "purpose": "monochrome" }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "type": "image/png",
+      "sizes": "1280x720",
+      "form_factor": "wide",
+      "label": "tanvex homepage"
+    },
+    {
+      "src": "/screenshot-narrow.png",
+      "type": "image/png",
+      "sizes": "720x1280",
+      "form_factor": "narrow",
+      "label": "tanvex on mobile"
+    }
+  ]
+}

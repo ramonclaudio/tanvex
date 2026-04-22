@@ -1,6 +1,7 @@
-import { cronJobs } from 'convex/server'
-import { components, internal } from './_generated/api'
-import { internalMutation } from './_generated/server'
+import { cronJobs } from "convex/server"
+
+import { components, internal } from "./_generated/api"
+import { internalMutation } from "./_generated/server"
 
 const crons = cronJobs()
 
@@ -8,7 +9,7 @@ const crons = cronJobs()
 // emails and it's our job to clear them. Run hourly to keep the emails table
 // bounded. See @convex-dev/resend README → "Data retention".
 crons.interval(
-  'Remove old emails from the resend component',
+  "Remove old emails from the resend component",
   { hours: 1 },
   internal.crons.cleanupResend,
 )
@@ -24,11 +25,9 @@ export const cleanupResend = internalMutation({
     })
     // Abandoned emails usually indicate a bug, so keep them around longer
     // (4 weeks) for debugging before purging.
-    await ctx.scheduler.runAfter(
-      0,
-      components.resend.lib.cleanupAbandonedEmails,
-      { olderThan: 4 * ONE_WEEK_MS },
-    )
+    await ctx.scheduler.runAfter(0, components.resend.lib.cleanupAbandonedEmails, {
+      olderThan: 4 * ONE_WEEK_MS,
+    })
   },
 })
 

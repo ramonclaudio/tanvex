@@ -1,14 +1,13 @@
-import { httpRouter } from 'convex/server'
-import { corsRouter } from 'convex-helpers/server/cors'
-import { v } from 'convex/values'
-import { httpAction, internalMutation } from './_generated/server'
-import { api, internal } from './_generated/api'
+import { corsRouter } from "convex-helpers/server/cors"
+import { httpRouter } from "convex/server"
+import { v } from "convex/values"
 
-import { authComponent, createAuth } from './auth'
-import { resend } from './email'
-import {  consumeLimit } from './rateLimit'
-import type {RateLimitName} from './rateLimit';
-import type { Id } from './_generated/dataModel'
+import { api, internal } from "./_generated/api"
+import { httpAction, internalMutation } from "./_generated/server"
+import { authComponent, createAuth } from "./auth"
+import { resend } from "./email"
+import { consumeLimit } from "./rateLimit"
+import type { RateLimitName } from "./rateLimit"
 
 // ============================================================================
 // Environment Validation
@@ -22,13 +21,13 @@ function getSiteUrl(): string {
   const url = process.env.SITE_URL
   if (!url) {
     // In production, this is a critical configuration error
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === "production") {
       console.error(
-        '[HTTP] CRITICAL: SITE_URL environment variable is not set. ' +
-        'CORS will fall back to localhost which is insecure in production.'
+        "[HTTP] CRITICAL: SITE_URL environment variable is not set. " +
+          "CORS will fall back to localhost which is insecure in production.",
       )
     }
-    return 'http://localhost:3000'
+    return "http://localhost:3000"
   }
   return url
 }
@@ -48,11 +47,7 @@ function getSiteUrl(): string {
 export const checkApiRateLimit = internalMutation({
   args: {
     key: v.string(),
-    name: v.union(
-      v.literal('apiRead'),
-      v.literal('apiWrite'),
-      v.literal('userAction')
-    ),
+    name: v.union(v.literal("apiRead"), v.literal("apiWrite"), v.literal("userAction")),
   },
   returns: v.object({
     ok: v.boolean(),
@@ -82,8 +77,8 @@ authComponent.registerRoutesLazy(http, createAuth)
 // Signed events get forwarded to `onEmailEvent` (see convex/email.ts) and
 // persisted to the component's `deliveryEvents` table automatically.
 http.route({
-  path: '/resend-webhook',
-  method: 'POST',
+  path: "/resend-webhook",
+  method: "POST",
   handler: httpAction(async (ctx, req) => {
     return await resend.handleResendEventWebhook(ctx, req)
   }),
@@ -100,7 +95,7 @@ const corsConfig = {
   // Allow credentials for auth cookies
   allowCredentials: true,
   // Allowed headers
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   // Cache preflight requests for 1 day
   browserCacheMaxAge: 86400,
 }
@@ -117,18 +112,18 @@ const cors = corsRouter(http, corsConfig)
  * GET /api/health
  */
 cors.route({
-  path: '/api/health',
-  method: 'GET',
+  path: "/api/health",
+  method: "GET",
   handler: httpAction(async () => {
     return new Response(
       JSON.stringify({
-        status: 'healthy',
+        status: "healthy",
         timestamp: Date.now(),
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
+        headers: { "Content-Type": "application/json" },
+      },
     )
   }),
 })
@@ -138,22 +133,12 @@ cors.route({
  * Handles comma-separated lists (proxies add IPs to the list).
  */
 function getClientIp(request: Request): string {
-  const forwardedFor = request.headers.get('x-forwarded-for')
+  const forwardedFor = request.headers.get("x-forwarded-for")
   if (forwardedFor) {
     // x-forwarded-for can be "client, proxy1, proxy2" - get the first (client) IP
-    return forwardedFor.split(',')[0].trim()
+    return forwardedFor.split(",")[0].trim()
   }
-  return 'unknown'
-}
-
-/**
- * Validate that a string looks like a valid Convex ID.
- * Convex IDs are base64-like strings of a specific format.
- */
-function isValidConvexIdFormat(id: string): boolean {
-  // Convex IDs are typically alphanumeric with specific characters
-  // They're at least a few characters long
-  return typeof id === 'string' && id.length >= 10 && /^[a-zA-Z0-9_-]+$/.test(id)
+  return "unknown"
 }
 
 /**
@@ -162,72 +147,57 @@ function isValidConvexIdFormat(id: string): boolean {
  * Rate limited by IP address
  */
 cors.route({
-  path: '/api/users',
-  method: 'GET',
+  path: "/api/users",
+  method: "GET",
   handler: httpAction(async (ctx, request) => {
     const url = new URL(request.url)
-    const userId = url.searchParams.get('id')
+    const userId = url.searchParams.get("id")
 
     if (!userId) {
-      return new Response(
-        JSON.stringify({ error: 'User ID is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Validate ID format before querying
-    if (!isValidConvexIdFormat(userId)) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid user ID format' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: "User ID is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      })
     }
 
     // Rate limit by client IP (handles x-forwarded-for properly)
     const ip = getClientIp(request)
     const rateLimitResult = await ctx.runMutation(internal.http.checkApiRateLimit, {
       key: `api:${ip}`,
-      name: 'apiRead',
+      name: "apiRead",
     })
 
     if (!rateLimitResult.ok) {
       return new Response(
         JSON.stringify({
-          error: 'Rate limit exceeded',
+          error: "Rate limit exceeded",
           retryAt: rateLimitResult.retryAt,
         }),
         {
           status: 429,
           headers: {
-            'Content-Type': 'application/json',
-            'Retry-After': String(Math.ceil((rateLimitResult.retryAt - Date.now()) / 1000)),
+            "Content-Type": "application/json",
+            "Retry-After": String(Math.ceil((rateLimitResult.retryAt - Date.now()) / 1000)),
           },
-        }
+        },
       )
     }
 
-    try {
-      const user = await ctx.runQuery(api.users.getUser, {
-        userId: userId as Id<'users'>,
-      })
+    // getUser normalizes the id internally and returns null on malformed input
+    // or missing record, so we treat both as 404.
+    const user = await ctx.runQuery(api.users.getUser, { userId })
 
-      if (!user) {
-        return new Response(
-          JSON.stringify({ error: 'User not found' }),
-          { status: 404, headers: { 'Content-Type': 'application/json' } }
-        )
-      }
-
-      return new Response(JSON.stringify(user), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
+    if (!user) {
+      return new Response(JSON.stringify({ error: "User not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
       })
-    } catch {
-      return new Response(
-        JSON.stringify({ error: 'Invalid user ID' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      )
     }
+
+    return new Response(JSON.stringify(user), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    })
   }),
 })
 
@@ -237,33 +207,33 @@ cors.route({
  * Rate limited by IP address
  */
 cors.route({
-  path: '/api/users/list',
-  method: 'GET',
+  path: "/api/users/list",
+  method: "GET",
   handler: httpAction(async (ctx, request) => {
     const url = new URL(request.url)
-    const cursor = url.searchParams.get('cursor') || undefined
-    const limit = parseInt(url.searchParams.get('limit') || '20', 10)
+    const cursor = url.searchParams.get("cursor") || undefined
+    const limit = parseInt(url.searchParams.get("limit") || "20", 10)
 
     // Rate limit by client IP (handles x-forwarded-for properly)
     const ip = getClientIp(request)
     const rateLimitResult = await ctx.runMutation(internal.http.checkApiRateLimit, {
       key: `api:${ip}`,
-      name: 'apiRead',
+      name: "apiRead",
     })
 
     if (!rateLimitResult.ok) {
       return new Response(
         JSON.stringify({
-          error: 'Rate limit exceeded',
+          error: "Rate limit exceeded",
           retryAt: rateLimitResult.retryAt,
         }),
         {
           status: 429,
           headers: {
-            'Content-Type': 'application/json',
-            'Retry-After': String(Math.ceil((rateLimitResult.retryAt - Date.now()) / 1000)),
+            "Content-Type": "application/json",
+            "Retry-After": String(Math.ceil((rateLimitResult.retryAt - Date.now()) / 1000)),
           },
-        }
+        },
       )
     }
 
@@ -274,7 +244,7 @@ cors.route({
 
     return new Response(JSON.stringify(result), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     })
   }),
 })

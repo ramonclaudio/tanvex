@@ -1,0 +1,178 @@
+# tanvex: full context for AI assistants
+
+> TanStack Start + Convex + Better Auth starter on the latest majors. SSR auth, email OTP, user profiles, rate limiting, one-command setup. Vite 8 Rolldown+Oxc, Tailwind v4 + shadcn base-luma on Base UI, Oxlint + Oxfmt.
+
+## What this repo is
+
+A production-ready TanStack Start template wired with Convex + Better Auth +
+Resend: SSR via Nitro 3, React 19, TypeScript 6, Tailwind v4, shadcn/ui
+base-luma theme on Base UI primitives, Vitest 4 + jsdom, Oxlint + Oxfmt, Bun
+runtime. One command sets up the Convex deployment, auth secret, email
+sender, and pushes schema.
+
+Unlike other TanStack + shadcn starters, this one ships:
+
+- Convex backend with Better Auth for sessions, email OTP, and username sign-in
+- Resend for transactional email (sign-up verification, sign-in OTP, password reset, email change)
+- User profiles with bio and avatar uploads to Convex storage
+- Rate limits at the HTTP layer (Better Auth) and on public API endpoints
+- Base UI (`@base-ui/react`) primitives
+- Oxlint + Oxfmt from the Oxc toolchain
+- base-luma theme (OKLch, rounded-4xl, soft rings) instead of neutral/stone
+- Launch baseline: OG/Twitter meta, JSON-LD @graph, PWA icons (any + maskable + monochrome), PWA screenshots, manifest with shortcuts and launch_handler, robots.txt with AI crawler opt-outs, sitemap.xml, security.txt, llms.txt, Nitro routeRules security headers, skip link, prefers-reduced-motion, theme-color per scheme, color-scheme meta, Speculation Rules API for prerender
+
+## Repository
+
+- GitHub: https://github.com/ramonclaudio/tanvex
+- License: MIT
+- Install: `bunx degit ramonclaudio/tanvex my-app`
+- Author: Ramon Claudio (https://github.com/ramonclaudio)
+
+## Stack detail
+
+- **TanStack Start** + **TanStack Router**: file-based routing, SSR via Nitro 3
+- **Convex 1.34**: backend, real-time queries, storage, HTTP actions
+- **Better Auth 1.6.5**: sessions, email + password, `emailOTP` + `username` plugins, JWKS for Convex JWT auth
+- **`@convex-dev/better-auth`**: Convex adapter for Better Auth, SSR-safe
+- **`@convex-dev/resend`**: Resend component with webhook handler + delivery-event persistence
+- **`@convex-dev/rate-limiter`**: token-bucket limiter for API endpoints and user actions
+- **Vite 8**: Rolldown bundler, Oxc plugins
+- **Nitro 3**: SSR build, deploy-agnostic (Vercel / Cloudflare / Netlify / Node / Bun / Deno)
+- **React 19**: automatic JSX transform
+- **TypeScript 6**: strict, isolatedModules, verbatimModuleSyntax
+- **Tailwind CSS v4**: `@tailwindcss/vite` plugin
+- **shadcn/ui**: base-luma theme pinned in `components.json`
+- **Base UI**: `@base-ui/react` primitives
+- **Zod v4**: client-side validation; Convex validators on the backend
+- **HugeIcons**: `@hugeicons/core-free-icons` + `@hugeicons/react`
+- **Geist Variable**: via `@fontsource-variable/geist`
+- **Oxlint 1.59**: 232 rules, 8 plugins, type-aware via `oxlint-tsgolint`
+- **Oxfmt**: native import + Tailwind + package.json field sorting
+- **Vitest 4**: jsdom environment + `@testing-library/react`
+- **Sonner**: toast primitive
+- **web-vitals**: lazy-loaded after hydration, reports CLS / FCP / INP / LCP / TTFB
+- **Bun**: runtime and package manager
+
+## Auth flows
+
+Sign-in with email + password or username + password. Sign-up takes name, email,
+password (required) plus username and avatar (optional). Username is 3-30 chars,
+alphanumeric with `_` and `.`, checked against a reserved-name list with a
+debounced availability check. Email verification uses the Better Auth `emailOTP`
+plugin, delivered via Resend. Password reset and email-change both use OTP.
+Sessions expire in 7 days, refresh when 1 day remains, with a 10-minute
+`freshAge` window for sensitive ops like password change. Avatars are
+`image/*`, max 5MB, stored in Convex storage.
+
+Rate limits at the HTTP layer (Better Auth):
+
+- `/sign-in/*`: 5/min
+- `/sign-up/*`: 3/min
+- `/email-otp/request-password-reset`: 3/hour
+- `/email-otp/reset-password`: 3/min
+- `/email-otp/send-verification-otp`: 3/min
+- `/list-sessions`: 30/min
+- `/get-session`: 60/min
+
+SSR auth works because the root route fetches the auth token via
+`createServerFn`, sets it on `convexQueryClient` before render, and hands it
+off to the client on hydrate.
+
+## HTTP API
+
+Hosted on Convex at `https://<project>.convex.site`, CORS-locked to `SITE_URL`.
+
+- `GET /api/health`: no auth, no rate limit
+- `GET /api/users?id=<userId>`: no auth, `apiRead` rate limit by IP
+- `GET /api/users/list?cursor=...&limit=...`: no auth, `apiRead` rate limit by IP
+- `POST /resend-webhook`: Resend delivery events (signed with `RESEND_WEBHOOK_SECRET`)
+
+## Key files
+
+- `convex/auth.ts`: Better Auth config, user helpers, `safeGetAuthenticatedUser`, `rotateKeys` action
+- `convex/auth.config.ts`: JWT provider for Convex-side auth checks
+- `convex/http.ts`: HTTP router with CORS, Better Auth routes, Resend webhook, public API
+- `convex/email.ts`: Resend helpers + OTP email templates, delivery-event handler
+- `convex/rateLimit.ts`: token-bucket limiter config (`apiRead`, `apiWrite`, `userAction`)
+- `convex/schema.ts`: users table (identity merged from Better Auth)
+- `convex/users.ts`: profile queries and mutations, avatar upload URL, avatar delete
+- `convex/constants.ts`: username validation (shared between client and server)
+- `src/routes/__root.tsx`: root layout, head (meta + OG + JSON-LD + speculation rules), theme, Toaster, skip link
+- `src/routes/index.tsx`: demo homepage
+- `src/routes/sign-in.tsx`: auth UI (signin, signup, OTP verify, password reset)
+- `src/routes/_authed.tsx`: auth gate for protected routes
+- `src/routes/_authed/profile.tsx`: profile editor, avatar upload, change-password
+- `src/routes/api/auth/$.ts`: Better Auth proxy for TanStack Start
+- `src/lib/auth-client.ts`: Better Auth client with `convexClient`, `usernameClient`, `emailOTPClient`
+- `src/lib/auth-server.ts`: server-side auth helpers (`fetchAuthQuery`, `getToken`)
+- `src/lib/site.ts`: SITE_URL, SITE_NAME, SITE_TITLE, SITE_DESCRIPTION, AUTHOR_*, REPO_URL, SITE_LOCALE, SITE_OG_IMAGE_ALT
+- `src/lib/seo.ts`: emits og, twitter, canonical, description tags (absolute URLs for og:image)
+- `src/components/theme-provider.tsx`: light/dark/system with no-flash script
+- `src/components/user-menu.tsx`: avatar dropdown
+- `src/styles.css`: Tailwind v4 + base-luma + prefers-reduced-motion
+- `scripts/setup.ts`: one-command onboarding (wipe, install, Convex + Better Auth + Resend)
+- `vite.config.ts`: Vite 8 + Nitro SSR + `routeRules` security headers
+- `public/manifest.webmanifest`: PWA manifest
+- `public/robots.txt`: AI crawler opt-outs (GPTBot, ClaudeBot, CCBot, Google-Extended, Applebot-Extended, Bytespider, meta-externalagent, anthropic-ai, cohere-ai, etc.)
+- `public/sitemap.xml`: minimal static sitemap
+- `public/og.png`: 2400×1260 OG card (retina 2x of 1200×630)
+- `public/.well-known/security.txt`: RFC 9116
+
+## Scripts
+
+- `bun run setup`: wipe, reinstall, configure Convex + Better Auth + Resend (interactive)
+- `bun run setup --local`: same, with Docker Convex
+- `bun run setup --fresh`: new Convex deployment (wipes `.env.local`)
+- `bun run dev`: concurrent Vite + `convex dev` on `:3000`
+- `bun run build`: `tsc --noEmit && vite build`
+- `bun run start`: Nitro SSR server from `.output/`
+- `bun run preview`: `vite preview`
+- `bun run typecheck`: `tsc --noEmit`
+- `bun run lint` / `lint:fix` / `lint:fix:suggest` / `lint:fix:dangerous`: oxlint variants
+- `bun run fmt` / `fmt:check`: oxfmt
+- `bun run test` / `test:watch`: vitest
+- `bun run analyze`: build with rollup-plugin-visualizer (`.output/stats.html`)
+
+## Environment variables
+
+Client-side (`.env.local`, written by `bun run setup`):
+
+- `CONVEX_DEPLOYMENT`: deployment identifier (`dev:<name>` or `prod:<name>`)
+- `VITE_CONVEX_URL`: `*.convex.cloud` endpoint
+- `VITE_CONVEX_SITE_URL`: `*.convex.site` endpoint (hosts Better Auth + Resend webhook)
+- `VITE_SITE_URL`: public URL, used for SEO (canonical, og:url, sitemap, JSON-LD)
+
+Server-side (on the Convex deployment, set via `bunx convex env set`):
+
+- `SITE_URL`: origin used for CORS + Better Auth `baseURL`
+- `BETTER_AUTH_SECRET`: 32-byte base64 session-signing secret (auto-generated by setup)
+- `RESEND_API_KEY`: Resend API key (starts with `re_`)
+- `EMAIL_FROM`: `Display Name <address@domain.com>` on outbound OTPs
+- `APP_NAME`: brand name shown in email subjects
+- `RESEND_TEST_MODE`: `true` restricts delivery to `@resend.dev` addresses (default `false` after setup)
+- `RESEND_WEBHOOK_SECRET`: optional, verifies signatures on `/resend-webhook`
+
+## Conventions
+
+- Client-exposed env vars must be prefixed `VITE_` (available via `import.meta.env`)
+- Server-only secrets live on the Convex deployment, not in `.env.local`
+- shadcn style pinned to `base-luma` in `components.json`; `bunx shadcn@latest add` respects it
+- TypeScript strict; prefer early returns, small functions, no deep nesting
+- Conventional commits; Oxlint + Oxfmt handle lint + format
+- No README, docs, or config files generated unless explicitly requested
+
+## Known integrations
+
+- **Vercel**: Nitro auto-detects the preset. Platform-agnostic security headers ship from `routeRules` in `vite.config.ts`. Add `@vercel/speed-insights` + `@vercel/analytics` manually if you want Vercel's RUM.
+- **Cloudflare / Netlify / Node / Bun / Deno**: Nitro auto-detects. Same headers, no config change needed.
+- **Sentry**: not installed; drop in via `npm i @sentry/react` + TanStack Start SDK when needed.
+
+## Lighthouse (production, desktop, 5 runs p50)
+
+Measured against https://tanvex.vercel.app:
+
+- Performance: 100
+- Accessibility: 100
+- Best Practices: 100
+- SEO: 100
+- LCP: 429ms, FCP: 429ms, CLS: 0.000, TBT: 0ms, TTFB: 46ms, SI: 459ms
