@@ -1,0 +1,5 @@
+# RFC 9116: https://securitytxt.org
+Contact: https://github.com/ramonclaudio/tanvex/security/advisories/new
+Expires: 2027-01-01T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://tanvex.vercel.app/.well-known/security.txt
