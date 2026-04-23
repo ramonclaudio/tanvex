@@ -98,7 +98,7 @@ function Home() {
   }
 
   return (
-    <main id="main" className="mx-auto max-w-5xl px-6 py-20 sm:py-28">
+    <main id="main" className="mx-auto w-full max-w-5xl px-6 py-16 sm:py-24">
       <section className="flex flex-col items-start gap-6">
         <div className="flex items-center gap-3">
           <div

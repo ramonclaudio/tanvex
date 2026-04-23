@@ -12,10 +12,10 @@ import SquareLock02Icon from "@hugeicons/core-free-icons/SquareLock02Icon"
 import Tick02Icon from "@hugeicons/core-free-icons/Tick02Icon"
 import UserIcon from "@hugeicons/core-free-icons/UserIcon"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { useQuery } from "convex-helpers/react"
-import { Authenticated, AuthLoading, Unauthenticated, useMutation } from "convex/react"
+import { useConvexAuth, useMutation } from "convex/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -46,18 +46,30 @@ export const Route = createFileRoute("/_authed/profile")({
 
 function ProfilePage() {
   const { preloadedUser } = Route.useLoaderData()
+  const { isAuthenticated, isLoading } = useConvexAuth()
+  const navigate = useNavigate()
+
+  // UPSTREAM(convex-better-auth#isloading-latch): gate on `isAuthenticated`
+  // (which stays stable through Better Auth's isPending spikes on session
+  // refetch) instead of `isLoading` (which flips true on every refetch and
+  // would otherwise unmount ProfileContent mid-edit). The `preloadedUser &&
+  // isLoading` branch covers the SSR hydration window before the client-side
+  // session resolves. In-session sign-out or expiry flips isAuthenticated
+  // false; the `_authed` beforeLoad only runs on navigation, so fall back
+  // to a client-side redirect. Revisit once the latch ships upstream.
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      void navigate({ to: "/sign-in", search: { redirect: "/profile" } })
+    }
+  }, [isLoading, isAuthenticated, navigate])
 
   return (
-    <main id="main" className="mx-auto w-full max-w-2xl px-6 py-12 sm:py-16">
-      <AuthLoading>
-        <ProfileSkeleton />
-      </AuthLoading>
-      <Authenticated>
+    <main id="main" className="mx-auto w-full max-w-5xl px-6 py-16 sm:py-24">
+      {isAuthenticated || (preloadedUser && isLoading) ? (
         <ProfileContent preloadedUser={preloadedUser} />
-      </Authenticated>
-      <Unauthenticated>
-        <p className="text-center text-muted-foreground">Please sign in to view your profile.</p>
-      </Unauthenticated>
+      ) : (
+        <ProfileSkeleton />
+      )}
     </main>
   )
 }
@@ -124,6 +136,26 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
     username: currentUser?.displayUsername ?? currentUser?.username ?? "",
     bio: currentUser?.bio ?? "",
   })
+
+  // Sync formData to currentUser when it changes (e.g. live query resolved
+  // after mount, or a different tab updated the profile). Skip while editing
+  // so we don't clobber the user's in-progress changes.
+  const currentUserId = currentUser?._id
+  useEffect(() => {
+    if (isEditing) return
+    setFormData({
+      name: currentUser?.name ?? "",
+      username: currentUser?.displayUsername ?? currentUser?.username ?? "",
+      bio: currentUser?.bio ?? "",
+    })
+  }, [
+    currentUserId,
+    currentUser?.name,
+    currentUser?.displayUsername,
+    currentUser?.username,
+    currentUser?.bio,
+    isEditing,
+  ])
 
   const checkUsernameAvailability = useCallback(
     async (username: string) => {

@@ -1,9 +1,12 @@
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react"
 import type { ConvexQueryClient } from "@convex-dev/react-query"
+import Home01Icon from "@hugeicons/core-free-icons/Home01Icon"
+import { HugeiconsIcon } from "@hugeicons/react"
 import type { QueryClient } from "@tanstack/react-query"
 import {
   createRootRouteWithContext,
   HeadContent,
+  Link,
   Outlet,
   Scripts,
   useRouteContext,
@@ -15,12 +18,14 @@ import { DefaultCatchBoundary } from "@/components/default-catch-boundary"
 import { NotFound } from "@/components/not-found"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { buttonVariants } from "@/components/ui/button"
 import { Toaster } from "@/components/ui/sonner"
 import { UserMenu } from "@/components/user-menu"
 import { WebVitals } from "@/components/web-vitals"
 import { authClient } from "@/lib/auth-client"
 import { getToken } from "@/lib/auth-server"
 import { seo } from "@/lib/seo"
+import { cn } from "@/lib/utils"
 import {
   AUTHOR_GITHUB,
   AUTHOR_NAME,
@@ -178,9 +183,23 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         </a>
         <ThemeProvider>
           <WebVitals />
-          <div className="fixed top-4 right-4 z-40 flex items-center gap-1.5">
-            <UserMenu />
-            <ThemeToggle />
+          <div className="fixed inset-x-0 top-4 z-40">
+            <div className="mx-auto flex max-w-5xl items-center justify-between px-6">
+              <Link
+                to="/"
+                aria-label="Home"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "icon" }),
+                  "[&_svg]:size-[1.2rem]",
+                )}
+              >
+                <HugeiconsIcon icon={Home01Icon} strokeWidth={2} />
+              </Link>
+              <div className="flex items-center gap-1.5">
+                <UserMenu />
+                <ThemeToggle />
+              </div>
+            </div>
           </div>
           {children}
           <Toaster />
