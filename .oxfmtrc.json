@@ -6,5 +6,5 @@
     "stylesheet": "src/styles.css",
     "functions": ["cn", "cva"]
   },
-  "ignorePatterns": ["**/routeTree.gen.ts"]
+  "ignorePatterns": ["**/routeTree.gen.ts", "convex/_generated/**"]
 }
