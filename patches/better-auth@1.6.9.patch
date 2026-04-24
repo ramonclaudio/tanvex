@@ -1,0 +1,165 @@
+diff --git a/dist/api/index.d.mts b/dist/api/index.d.mts
+index ad3d90a..6badf59 100644
+--- a/dist/api/index.d.mts
++++ b/dist/api/index.d.mts
+@@ -960,7 +960,7 @@ declare function getEndpoints<Option extends BetterAuthOptions>(ctx: Awaitable<A
+         };
+       };
+     }, {
+-      token: string | null;
++      token: null;
+       user: {
+         id: string;
+         createdAt: Date;
+@@ -2949,7 +2949,7 @@ declare const router: <Option extends BetterAuthOptions>(ctx: AuthContext, optio
+         };
+       };
+     }, {
+-      token: string | null;
++      token: null;
+       user: {
+         id: string;
+         createdAt: Date;
+diff --git a/dist/api/routes/update-user.d.mts b/dist/api/routes/update-user.d.mts
+index b97d99c..ad4558f 100644
+--- a/dist/api/routes/update-user.d.mts
++++ b/dist/api/routes/update-user.d.mts
+@@ -181,7 +181,7 @@ declare const changePassword: better_call0.StrictEndpoint<"/change-password", {
+     };
+   };
+ }, {
+-  token: string | null;
++  token: null;
+   user: {
+     id: string;
+     createdAt: Date;
+diff --git a/dist/api/routes/update-user.mjs b/dist/api/routes/update-user.mjs
+index 0fe7ac1..f2e1f77 100644
+--- a/dist/api/routes/update-user.mjs
++++ b/dist/api/routes/update-user.mjs
+@@ -92,7 +92,7 @@ const changePassword = createAuthEndpoint("/change-password", {
+ 					token: {
+ 						type: "string",
+ 						nullable: true,
+-						description: "New session token if other sessions were revoked"
++						description: "Authentication token for the session. Always null since the current session is preserved and no new session is issued."
+ 					},
+ 					user: {
+ 						type: "object",
+@@ -166,19 +166,14 @@ const changePassword = createAuthEndpoint("/change-password", {
+ 		password: currentPassword
+ 	})) throw APIError.from("BAD_REQUEST", BASE_ERROR_CODES.INVALID_PASSWORD);
+ 	await ctx.context.internalAdapter.updateAccount(account.id, { password: passwordHash });
+-	let token = null;
+ 	if (revokeOtherSessions) {
+-		await ctx.context.internalAdapter.deleteSessions(session.user.id);
+-		const newSession = await ctx.context.internalAdapter.createSession(session.user.id);
+-		if (!newSession) throw APIError.from("INTERNAL_SERVER_ERROR", BASE_ERROR_CODES.FAILED_TO_GET_SESSION);
+-		await setSessionCookie(ctx, {
+-			session: newSession,
+-			user: session.user
+-		});
+-		token = newSession.token;
++		const otherSessions = (await ctx.context.internalAdapter.listSessions(session.user.id)).filter((session) => {
++			return session.expiresAt > /* @__PURE__ */ new Date();
++		}).filter((session) => session.token !== ctx.context.session.session.token);
++		await Promise.all(otherSessions.map((session) => ctx.context.internalAdapter.deleteSession(session.token)));
+ 	}
+ 	return ctx.json({
+-		token,
++		token: null,
+ 		user: parseUserOutput(ctx.context.options, session.user)
+ 	});
+ });
+diff --git a/dist/test-utils/test-instance.d.mts b/dist/test-utils/test-instance.d.mts
+index 6cdd89b..ae59301 100644
+--- a/dist/test-utils/test-instance.d.mts
++++ b/dist/test-utils/test-instance.d.mts
+@@ -972,7 +972,7 @@ declare function getTestInstance<O extends Partial<BetterAuthOptions>, C extends
+         };
+       };
+     }, {
+-      token: string | null;
++      token: null;
+       user: {
+         id: string;
+         createdAt: Date;
+@@ -2975,7 +2975,7 @@ declare function getTestInstance<O extends Partial<BetterAuthOptions>, C extends
+         };
+       };
+     }, {
+-      token: string | null;
++      token: null;
+       user: {
+         id: string;
+         createdAt: Date;
+@@ -4981,7 +4981,7 @@ declare function getTestInstance<O extends Partial<BetterAuthOptions>, C extends
+             };
+           };
+         }, {
+-          token: string | null;
++          token: null;
+           user: {
+             id: string;
+             createdAt: Date;
+@@ -6984,7 +6984,7 @@ declare function getTestInstance<O extends Partial<BetterAuthOptions>, C extends
+             };
+           };
+         }, {
+-          token: string | null;
++          token: null;
+           user: {
+             id: string;
+             createdAt: Date;
+@@ -9061,7 +9061,7 @@ declare function getTestInstance<O extends Partial<BetterAuthOptions>, C extends
+             };
+           };
+         }, {
+-          token: string | null;
++          token: null;
+           user: {
+             id: string;
+             createdAt: Date;
+@@ -11064,7 +11064,7 @@ declare function getTestInstance<O extends Partial<BetterAuthOptions>, C extends
+             };
+           };
+         }, {
+-          token: string | null;
++          token: null;
+           user: {
+             id: string;
+             createdAt: Date;
+diff --git a/package.json b/package.json
+index 52c9ec2..ec78dde 100644
+--- a/package.json
++++ b/package.json
+@@ -479,6 +479,13 @@
+     }
+   },
+   "dependencies": {
++    "@better-auth/core": "https://pkg.pr.new/better-auth/better-auth/@better-auth/core@2612e4f",
++    "@better-auth/drizzle-adapter": "https://pkg.pr.new/better-auth/better-auth/@better-auth/drizzle-adapter@2612e4f",
++    "@better-auth/kysely-adapter": "https://pkg.pr.new/better-auth/better-auth/@better-auth/kysely-adapter@2612e4f",
++    "@better-auth/memory-adapter": "https://pkg.pr.new/better-auth/better-auth/@better-auth/memory-adapter@2612e4f",
++    "@better-auth/mongo-adapter": "https://pkg.pr.new/better-auth/better-auth/@better-auth/mongo-adapter@2612e4f",
++    "@better-auth/prisma-adapter": "https://pkg.pr.new/better-auth/better-auth/@better-auth/prisma-adapter@2612e4f",
++    "@better-auth/telemetry": "https://pkg.pr.new/better-auth/better-auth/@better-auth/telemetry@2612e4f",
+     "@better-auth/utils": "0.4.0",
+     "@better-fetch/fetch": "1.1.21",
+     "@noble/ciphers": "^2.1.1",
+@@ -488,14 +495,7 @@
+     "jose": "^6.1.3",
+     "kysely": "^0.28.14",
+     "nanostores": "^1.1.1",
+-    "zod": "^4.3.6",
+-    "@better-auth/core": "1.6.9",
+-    "@better-auth/drizzle-adapter": "1.6.9",
+-    "@better-auth/kysely-adapter": "1.6.9",
+-    "@better-auth/memory-adapter": "1.6.9",
+-    "@better-auth/mongo-adapter": "1.6.9",
+-    "@better-auth/prisma-adapter": "1.6.9",
+-    "@better-auth/telemetry": "1.6.9"
++    "zod": "^4.3.6"
+   },
+   "devDependencies": {
+     "@lynx-js/react": "^0.116.3",
