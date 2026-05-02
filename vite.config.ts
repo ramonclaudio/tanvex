@@ -34,13 +34,12 @@ export default defineConfig(({ mode }) => {
   return {
     server: {
       port: 3000,
+      warmup: {
+        clientFiles: ["./src/**/*.{ts,tsx}"],
+      },
     },
     resolve: {
       tsconfigPaths: true,
-    },
-    optimizeDeps: {
-      entries: ["src/**/*.{ts,tsx}"],
-      exclude: ["@base-ui/react", "@convex/_generated/api"],
     },
     ssr: {
       // Prevent AsyncLocalStorage context loss for Better Auth on the server.
