@@ -40,7 +40,7 @@ export default defineConfig(({ mode }) => {
     },
     optimizeDeps: {
       entries: ["src/**/*.{ts,tsx}"],
-      exclude: ["@base-ui/react"],
+      exclude: ["@base-ui/react", "@convex/_generated/api"],
     },
     ssr: {
       // Prevent AsyncLocalStorage context loss for Better Auth on the server.
