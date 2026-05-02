@@ -240,22 +240,22 @@ The base-luma preset ships 53 primitives plus block templates. shadcn handles th
 
 Currently in `src/components/ui/`. Use these directly, don't reinstall.
 
-| Primitive | File | Notes |
-|---|---|---|
-| Alert | `alert.tsx` | Inline non-blocking notice. Default + destructive variants. For blocking confirmations use Dialog (not installed yet). |
-| Avatar | `avatar.tsx` | Always `rounded-full`. Sizes used: `size-8` (header chip), `size-9` (icon button), `size-14` (signup picker), `size-24` (profile hero). Fallback is user initial in `bg-muted`. |
-| Button | `button.tsx` | Five variants: `default`, `outline`, `secondary`, `ghost`, `destructive`, `link`. All use `rounded-4xl`. Sizes `xs/sm/default/lg/icon` map to `h-6 / h-8 / h-9 / h-10 / size-9`. Primary hovers at 80% opacity; outline and ghost hover to `bg-muted`. |
-| Card | `card.tsx` | The system's one elevated surface. `bg-card rounded-4xl shadow-md ring-1 ring-foreground/5 dark:ring-foreground/10`. `data-size=sm` shrinks padding. Compose with `CardHeader`/`CardContent`/`CardFooter`/`CardTitle`/`CardDescription`. |
+| Primitive     | File                | Notes                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Alert         | `alert.tsx`         | Inline non-blocking notice. Default + destructive variants. For blocking confirmations use Dialog (not installed yet).                                                                                                                                                                                                                                                                            |
+| Avatar        | `avatar.tsx`        | Always `rounded-full`. Sizes used: `size-8` (header chip), `size-9` (icon button), `size-14` (signup picker), `size-24` (profile hero). Fallback is user initial in `bg-muted`.                                                                                                                                                                                                                   |
+| Button        | `button.tsx`        | Five variants: `default`, `outline`, `secondary`, `ghost`, `destructive`, `link`. All use `rounded-4xl`. Sizes `xs/sm/default/lg/icon` map to `h-6 / h-8 / h-9 / h-10 / size-9`. Primary hovers at 80% opacity; outline and ghost hover to `bg-muted`.                                                                                                                                            |
+| Card          | `card.tsx`          | The system's one elevated surface. `bg-card rounded-4xl shadow-md ring-1 ring-foreground/5 dark:ring-foreground/10`. `data-size=sm` shrinks padding. Compose with `CardHeader`/`CardContent`/`CardFooter`/`CardTitle`/`CardDescription`.                                                                                                                                                          |
 | Dropdown menu | `dropdown-menu.tsx` | Translucent surface: `bg-popover/70` + `before:backdrop-blur-2xl before:backdrop-saturate-150` pseudo-element. Items `rounded-2xl`, focus uses `bg-foreground/10` (subtle accent). Destructive items: `text-destructive` + `bg-destructive/10` on focus. The translucent recipe is inlined per the preset's `menuColor: default-translucent` — reinstall from the shadcn registry to get updates. |
-| Empty | `empty.tsx` | "No rows" state. `Empty` outer with `border-dashed p-12 rounded-2xl`, composable `EmptyMedia` (`size-10 rounded-xl bg-muted` for icon variant), `EmptyHeader`/`EmptyDescription`/`EmptyContent`. |
-| Field | `field.tsx` | Form composition: `Field`, `FieldGroup`, `FieldSet`, `FieldLegend`, `FieldLabel`, `FieldDescription`, `FieldError`. The right wrapper for any form section. Errors render in `text-destructive` below the input. |
-| Input | `input.tsx` | `bg-input/50 rounded-3xl h-9 border-transparent`. On focus: `border-ring` + `ring-3 ring-ring/30`. Aria-invalid swaps to `ring-destructive/20`. |
-| Input group | `input-group.tsx` | Wraps `Input` plus inline `InputGroupAddon` (icon, kbd, button) into a single `rounded-4xl h-9` shell. Addons align via `data-align` (`inline-start`/`-end`/`block-start`/`-end`). Block-aligned promotes to `flex-col` and shifts to `rounded-3xl`. |
-| Kbd | `kbd.tsx` | Keyboard hint chip. `bg-muted text-muted-foreground rounded-lg`. Inverts to `bg-input` inside `InputGroup`, `bg-background/20 text-background` in tooltips. `KbdGroup` chains keys. |
-| Label | `label.tsx` | `text-sm leading-none font-medium`. Use raw `Label` only outside a `Field`; otherwise `FieldLabel` is preferred. |
-| Separator | `separator.tsx` | `shrink-0 bg-border data-horizontal:h-px data-vertical:w-px`. No baked-in margin — parent layout owns spacing. |
-| Sonner | `sonner.tsx` | Toaster mounted once in `__root.tsx`. `cn-toast` applies `rounded-2xl` over Sonner defaults. Status icons are HugeIcons at `size-4`: `CheckmarkCircle02Icon` (success), `InformationCircleIcon` (info), `Alert02Icon` (warning), `MultiplicationSignCircleIcon` (error), `Loading03Icon` (loading). Call `toast.success` / `.error` / etc. from `sonner` directly. |
-| Textarea | `textarea.tsx` | `bg-input/50 rounded-2xl min-h-16 field-sizing-content`. Auto-grows. Same focus / invalid / disabled treatment as Input. |
+| Empty         | `empty.tsx`         | "No rows" state. `Empty` outer with `border-dashed p-12 rounded-2xl`, composable `EmptyMedia` (`size-10 rounded-xl bg-muted` for icon variant), `EmptyHeader`/`EmptyDescription`/`EmptyContent`.                                                                                                                                                                                                  |
+| Field         | `field.tsx`         | Form composition: `Field`, `FieldGroup`, `FieldSet`, `FieldLegend`, `FieldLabel`, `FieldDescription`, `FieldError`. The right wrapper for any form section. Errors render in `text-destructive` below the input.                                                                                                                                                                                  |
+| Input         | `input.tsx`         | `bg-input/50 rounded-3xl h-9 border-transparent`. On focus: `border-ring` + `ring-3 ring-ring/30`. Aria-invalid swaps to `ring-destructive/20`.                                                                                                                                                                                                                                                   |
+| Input group   | `input-group.tsx`   | Wraps `Input` plus inline `InputGroupAddon` (icon, kbd, button) into a single `rounded-4xl h-9` shell. Addons align via `data-align` (`inline-start`/`-end`/`block-start`/`-end`). Block-aligned promotes to `flex-col` and shifts to `rounded-3xl`.                                                                                                                                              |
+| Kbd           | `kbd.tsx`           | Keyboard hint chip. `bg-muted text-muted-foreground rounded-lg`. Inverts to `bg-input` inside `InputGroup`, `bg-background/20 text-background` in tooltips. `KbdGroup` chains keys.                                                                                                                                                                                                               |
+| Label         | `label.tsx`         | `text-sm leading-none font-medium`. Use raw `Label` only outside a `Field`; otherwise `FieldLabel` is preferred.                                                                                                                                                                                                                                                                                  |
+| Separator     | `separator.tsx`     | `shrink-0 bg-border data-horizontal:h-px data-vertical:w-px`. No baked-in margin — parent layout owns spacing.                                                                                                                                                                                                                                                                                    |
+| Sonner        | `sonner.tsx`        | Toaster mounted once in `__root.tsx`. `cn-toast` applies `rounded-2xl` over Sonner defaults. Status icons are HugeIcons at `size-4`: `CheckmarkCircle02Icon` (success), `InformationCircleIcon` (info), `Alert02Icon` (warning), `MultiplicationSignCircleIcon` (error), `Loading03Icon` (loading). Call `toast.success` / `.error` / etc. from `sonner` directly.                                |
+| Textarea      | `textarea.tsx`      | `bg-input/50 rounded-2xl min-h-16 field-sizing-content`. Auto-grows. Same focus / invalid / disabled treatment as Input.                                                                                                                                                                                                                                                                          |
 
 ### Available (not installed)
 
@@ -263,76 +263,76 @@ The full base-luma surface area, ready to install via `bunx --bun shadcn@latest 
 
 **Layout & navigation**
 
-| Primitive | What it is |
-|---|---|
-| `accordion` | Expandable vertical sections; one or many open at a time. FAQs, filter groups, collapsible lists. |
-| `breadcrumb` | Hierarchical navigation trail with separator icons. |
-| `collapsible` | Single show/hide panel. Simpler than Accordion — just one toggle. |
-| `navigation-menu` | Mega-menu with grouped links. For site headers with dropdown sections. |
-| `pagination` | Prev/next + page number controls with RTL-aware arrows. |
-| `resizable` | Drag-to-resize split panels. IDEs, dashboards. |
-| `scroll-area` | Custom-styled scrollbars for overflow containers. |
-| `sheet` | Side-drawer dialog that slides in from an edge. |
-| `sidebar` | Full sidebar layout shell with collapsed/expanded states. Use with one of the `sidebar-*` blocks below for a complete pattern. |
-| `tabs` | Horizontal tab navigation with content panels. |
+| Primitive         | What it is                                                                                                                     |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `accordion`       | Expandable vertical sections; one or many open at a time. FAQs, filter groups, collapsible lists.                              |
+| `breadcrumb`      | Hierarchical navigation trail with separator icons.                                                                            |
+| `collapsible`     | Single show/hide panel. Simpler than Accordion — just one toggle.                                                              |
+| `navigation-menu` | Mega-menu with grouped links. For site headers with dropdown sections.                                                         |
+| `pagination`      | Prev/next + page number controls with RTL-aware arrows.                                                                        |
+| `resizable`       | Drag-to-resize split panels. IDEs, dashboards.                                                                                 |
+| `scroll-area`     | Custom-styled scrollbars for overflow containers.                                                                              |
+| `sheet`           | Side-drawer dialog that slides in from an edge.                                                                                |
+| `sidebar`         | Full sidebar layout shell with collapsed/expanded states. Use with one of the `sidebar-*` blocks below for a complete pattern. |
+| `tabs`            | Horizontal tab navigation with content panels.                                                                                 |
 
 **Overlays**
 
-| Primitive | What it is |
-|---|---|
-| `alert-dialog` | Blocking confirmation modal. Cannot be dismissed by clicking outside. For destructive confirmations. |
-| `dialog` | Modal dialog for forms, details, dismissible content. |
-| `drawer` | Bottom-sheet drawer (mobile-style). Can also slide from the side. |
-| `hover-card` | Rich tooltip on hover with images, links, formatted content. Non-interactive peek. |
-| `popover` | Floating panel anchored to a trigger. Non-modal, for pickers, inline forms, secondary actions. Uses the translucent recipe. |
-| `tooltip` | Text tooltip on hover/focus. Short inline hints. |
+| Primitive      | What it is                                                                                                                  |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `alert-dialog` | Blocking confirmation modal. Cannot be dismissed by clicking outside. For destructive confirmations.                        |
+| `dialog`       | Modal dialog for forms, details, dismissible content.                                                                       |
+| `drawer`       | Bottom-sheet drawer (mobile-style). Can also slide from the side.                                                           |
+| `hover-card`   | Rich tooltip on hover with images, links, formatted content. Non-interactive peek.                                          |
+| `popover`      | Floating panel anchored to a trigger. Non-modal, for pickers, inline forms, secondary actions. Uses the translucent recipe. |
+| `tooltip`      | Text tooltip on hover/focus. Short inline hints.                                                                            |
 
 **Form controls**
 
-| Primitive | What it is |
-|---|---|
-| `checkbox` | Checkbox input with indeterminate state. |
-| `combobox` | Typeahead searchable select. Built on `command` + `popover`. |
-| `command` | Command palette (Cmd+K style searchable menu). Fuzzy-match list with keyboard nav. |
-| `input-otp` | Multi-digit OTP input with auto-tabbing between boxes. Use for email/SMS verification codes. |
-| `native-select` | Native `<select>` with Luma styling. Use when you need browser-native behavior. |
-| `radio-group` | Single-select radio button group. |
-| `select` | Custom select dropdown with keyboard navigation. Translucent menu surface. |
-| `slider` | Range input slider with single or dual handles. |
-| `switch` | Toggle switch (on/off). Luma uses a pill-shaped thumb. |
-| `toggle` | Single toggle button (pressed / unpressed). |
-| `toggle-group` | Group of toggles, single-select or multi-select. |
+| Primitive       | What it is                                                                                   |
+| --------------- | -------------------------------------------------------------------------------------------- |
+| `checkbox`      | Checkbox input with indeterminate state.                                                     |
+| `combobox`      | Typeahead searchable select. Built on `command` + `popover`.                                 |
+| `command`       | Command palette (Cmd+K style searchable menu). Fuzzy-match list with keyboard nav.           |
+| `input-otp`     | Multi-digit OTP input with auto-tabbing between boxes. Use for email/SMS verification codes. |
+| `native-select` | Native `<select>` with Luma styling. Use when you need browser-native behavior.              |
+| `radio-group`   | Single-select radio button group.                                                            |
+| `select`        | Custom select dropdown with keyboard navigation. Translucent menu surface.                   |
+| `slider`        | Range input slider with single or dual handles.                                              |
+| `switch`        | Toggle switch (on/off). Luma uses a pill-shaped thumb.                                       |
+| `toggle`        | Single toggle button (pressed / unpressed).                                                  |
+| `toggle-group`  | Group of toggles, single-select or multi-select.                                             |
 
 **Feedback & data**
 
-| Primitive | What it is |
-|---|---|
-| `badge` | Small label chip for status, counts, tags. Pill-shaped. |
-| `calendar` | Date picker calendar with range support. |
-| `chart` | Recharts wrapper with Luma-styled tooltips, legends, axes. |
-| `progress` | Progress bar with determinate / indeterminate states. |
-| `skeleton` | Loading placeholder blocks. Prefer over inline `bg-muted animate-pulse`. |
-| `spinner` | Loading spinner primitive. Prefer over the inline `HugeiconsIcon Loading03Icon` pattern if we standardize. |
-| `table` | Data table primitives (`Table`, `TableHeader`, `TableBody`, `TableRow`, `TableCell`, `TableCaption`). |
+| Primitive  | What it is                                                                                                 |
+| ---------- | ---------------------------------------------------------------------------------------------------------- |
+| `badge`    | Small label chip for status, counts, tags. Pill-shaped.                                                    |
+| `calendar` | Date picker calendar with range support.                                                                   |
+| `chart`    | Recharts wrapper with Luma-styled tooltips, legends, axes.                                                 |
+| `progress` | Progress bar with determinate / indeterminate states.                                                      |
+| `skeleton` | Loading placeholder blocks. Prefer over inline `bg-muted animate-pulse`.                                   |
+| `spinner`  | Loading spinner primitive. Prefer over the inline `HugeiconsIcon Loading03Icon` pattern if we standardize. |
+| `table`    | Data table primitives (`Table`, `TableHeader`, `TableBody`, `TableRow`, `TableCell`, `TableCaption`).      |
 
 **Composition & utility**
 
-| Primitive | What it is |
-|---|---|
-| `aspect-ratio` | Maintain a fixed ratio (e.g. 16:9) for responsive containers. |
-| `button-group` | Connected row of buttons sharing borders. |
-| `context-menu` | Right-click context menu. Same translucent recipe as dropdown-menu. |
-| `item` | Generic list item primitive: icon + title + description + trailing action. Use for settings rows, option lists. |
-| `menubar` | Horizontal menu bar (File / Edit / View style). Translucent menu items. |
-| `carousel` | Horizontal scrolling carousel with prev/next controls. |
+| Primitive      | What it is                                                                                                      |
+| -------------- | --------------------------------------------------------------------------------------------------------------- |
+| `aspect-ratio` | Maintain a fixed ratio (e.g. 16:9) for responsive containers.                                                   |
+| `button-group` | Connected row of buttons sharing borders.                                                                       |
+| `context-menu` | Right-click context menu. Same translucent recipe as dropdown-menu.                                             |
+| `item`         | Generic list item primitive: icon + title + description + trailing action. Use for settings rows, option lists. |
+| `menubar`      | Horizontal menu bar (File / Edit / View style). Translucent menu items.                                         |
+| `carousel`     | Horizontal scrolling carousel with prev/next controls.                                                          |
 
 **Block templates** (full UI compositions, not atoms)
 
-| Block | What it is |
-|---|---|
-| `dashboard-01` | Complete dashboard shell: sidebar + top bar + content area with metric cards. |
-| `login-01` … `login-05` | Sign-in page layouts (centered, split-screen, with feature highlights, etc). |
-| `signup-01` … `signup-05` | Sign-up page layouts matching the login variants. |
+| Block                       | What it is                                                                                                                                                    |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dashboard-01`              | Complete dashboard shell: sidebar + top bar + content area with metric cards.                                                                                 |
+| `login-01` … `login-05`     | Sign-in page layouts (centered, split-screen, with feature highlights, etc).                                                                                  |
+| `signup-01` … `signup-05`   | Sign-up page layouts matching the login variants.                                                                                                             |
 | `sidebar-01` … `sidebar-16` | Sidebar variants: collapsed, icon-only, rail, nested, command palette, inset, floating. Reach for one of these before assembling from `sidebar` + primitives. |
 
 When scaffolding a new screen, check the blocks first — they're pre-wired compositions that save time over assembling from scratch. Install via the shadcn CLI, same as primitives.
@@ -344,7 +344,7 @@ Before building a UI from scratch, look at the canonical examples. The shadcn `/
 1. **Full gallery in the Luma style**
    [ui.shadcn.com/create?preset=b1VlJDbW](https://ui.shadcn.com/create?preset=b1VlJDbW)
 
-   Every primitive and block rendered in the exact style we use. Scroll the canvas, click **Shuffle** to see alternate combos, hit **Open Preset** to drop into the editor. Good for design browsing — seeing what's *possible* in Luma.
+   Every primitive and block rendered in the exact style we use. Scroll the canvas, click **Shuffle** to see alternate combos, hit **Open Preset** to drop into the editor. Good for design browsing — seeing what's _possible_ in Luma.
 
 2. **Single-primitive preview**
    `https://ui.shadcn.com/preview/base/<name>-example?preset=b1VlJDbW`

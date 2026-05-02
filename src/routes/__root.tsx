@@ -25,7 +25,6 @@ import { WebVitals } from "@/components/web-vitals"
 import { authClient } from "@/lib/auth-client"
 import { getToken } from "@/lib/auth-server"
 import { seo } from "@/lib/seo"
-import { cn } from "@/lib/utils"
 import {
   AUTHOR_GITHUB,
   AUTHOR_NAME,
@@ -36,6 +35,7 @@ import {
   SITE_TITLE,
   SITE_URL,
 } from "@/lib/site"
+import { cn } from "@/lib/utils"
 
 import appCss from "../styles.css?url"
 

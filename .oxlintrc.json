@@ -21,7 +21,7 @@
       }
     }
   },
-  "ignorePatterns": ["**/routeTree.gen.ts", "**/coverage/**"],
+  "ignorePatterns": ["**/routeTree.gen.ts", "**/coverage/**", "convex/_generated/**"],
   "options": {
     "reportUnusedDisableDirectives": "error",
     "typeAware": true
@@ -35,7 +35,8 @@
     "typescript/ban-ts-comment": [
       "error",
       { "ts-expect-error": false, "ts-ignore": "allow-with-description" }
-    ]
+    ],
+    "no-underscore-dangle": ["warn", { "allow": ["_id", "_creationTime"] }]
   },
   "overrides": [
     {
