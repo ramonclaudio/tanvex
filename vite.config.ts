@@ -34,9 +34,35 @@ export default defineConfig(({ mode }) => {
   return {
     server: {
       port: 3000,
+      warmup: {
+        clientFiles: ["./src/**/*.{ts,tsx}"],
+      },
     },
     resolve: {
       tsconfigPaths: true,
+    },
+    optimizeDeps: {
+      include: [
+        "@better-auth/core/db",
+        "@better-auth/core/env",
+        "@better-auth/core/error",
+        "@better-auth/core/utils/db",
+        "@better-auth/core/utils/error-codes",
+        "@better-auth/core/utils/json",
+        "@better-auth/core/utils/string",
+        "@better-auth/utils/base64",
+        "@better-auth/utils/binary",
+        "@better-auth/utils/hmac",
+        "@better-fetch/fetch",
+        "@noble/hashes/hkdf.js",
+        "@noble/hashes/sha2.js",
+        "@tanstack/router-core",
+        "@tanstack/router-core/ssr/client",
+        "defu",
+        "jose",
+        "nanostores",
+        "seroval",
+      ],
     },
     ssr: {
       // Prevent AsyncLocalStorage context loss for Better Auth on the server.

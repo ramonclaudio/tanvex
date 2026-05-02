@@ -43,7 +43,7 @@
     "setup:local": "bun run scripts/setup.ts --local",
     "dev": "concurrently -k -n convex,vite -c blue,magenta \"bunx convex dev\" \"vite dev\"",
     "dev:web": "vite dev",
-    "dev:convex": "bunx convex dev",
+    "convex:dev": "bunx convex dev",
     "build": "tsc --noEmit && vite build",
     "start": "node .output/server/index.mjs",
     "preview": "vite preview",
@@ -56,7 +56,7 @@
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "analyze": "ANALYZE=1 vite build",
-    "clean": "find . -maxdepth 1 \\( -name node_modules -o -name bun.lock -o -name .nitro -o -name .output -o -name .tanstack -o -name .wrangler -o -name .vinxi -o -name dist -o -name dist-ssr -o -name coverage -o -name convex/_generated \\) -exec trash {} + ; find . -name .DS_Store -not -path './node_modules/*' -exec trash {} +",
+    "clean": "bun run scripts/clean.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
