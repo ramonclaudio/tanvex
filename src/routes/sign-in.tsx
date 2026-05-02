@@ -134,15 +134,7 @@ function SignInPage() {
     return () => {
       cancelled = true
     }
-  }, [
-    isLoading,
-    isAuthenticated,
-    phase,
-    redirectTo,
-    navigate,
-    generateUploadUrl,
-    updateAvatar,
-  ])
+  }, [isLoading, isAuthenticated, phase, redirectTo, navigate, generateUploadUrl, updateAvatar])
 
   const resetToDefault = useCallback(() => setPhase({ kind: "default" }), [])
 
