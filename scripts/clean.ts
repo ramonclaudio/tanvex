@@ -25,7 +25,7 @@ for (const p of paths) {
 await $`find . -name .DS_Store -not -path './node_modules/*' -exec trash {} +`.nothrow()
 
 await $`bun install`
-await $`bunx convex ai-files install`
+await $`bunx convex ai-files update`
 await $`bunx convex dev --once`
 await $`bunx vite build`
 await $`bunx tsc --noEmit`
