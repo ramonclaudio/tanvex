@@ -2,7 +2,7 @@ import type { Metric } from "web-vitals"
 
 export function reportWebVitals(metric: Metric) {
   if (import.meta.env.DEV) {
-    console.log("[web-vital]", metric.name, Math.round(metric.value), metric)
+    console.log(`[web-vital] ${metric.name} ${Math.round(metric.value)} (${metric.rating})`)
     return
   }
 
