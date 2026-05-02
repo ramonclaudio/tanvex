@@ -41,6 +41,19 @@ export default defineConfig(({ mode }) => {
     resolve: {
       tsconfigPaths: true,
     },
+    optimizeDeps: {
+      include: [
+        "@better-auth/core",
+        "@better-auth/utils",
+        "@better-fetch/fetch",
+        "@noble/hashes",
+        "@tanstack/router-core",
+        "defu",
+        "jose",
+        "nanostores",
+        "seroval",
+      ],
+    },
     ssr: {
       // Prevent AsyncLocalStorage context loss for Better Auth on the server.
       noExternal: ["@convex-dev/better-auth"],
