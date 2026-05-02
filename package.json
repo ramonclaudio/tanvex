@@ -43,7 +43,7 @@
     "setup:local": "bun run scripts/setup.ts --local",
     "dev": "concurrently -k -n convex,vite -c blue,magenta \"bunx convex dev\" \"vite dev\"",
     "dev:web": "vite dev",
-    "dev:convex": "bunx convex dev",
+    "convex:dev": "bunx convex dev",
     "build": "tsc --noEmit && vite build",
     "start": "node .output/server/index.mjs",
     "preview": "vite preview",
