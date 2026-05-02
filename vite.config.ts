@@ -38,6 +38,10 @@ export default defineConfig(({ mode }) => {
     resolve: {
       tsconfigPaths: true,
     },
+    optimizeDeps: {
+      entries: ["src/**/*.{ts,tsx}"],
+      exclude: ["@base-ui/react"],
+    },
     ssr: {
       // Prevent AsyncLocalStorage context loss for Better Auth on the server.
       noExternal: ["@convex-dev/better-auth"],
