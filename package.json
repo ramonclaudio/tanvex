@@ -44,7 +44,7 @@
     "dev": "concurrently -k -n convex,vite -c blue,magenta \"bunx convex dev\" \"vite dev\"",
     "dev:web": "vite dev",
     "convex:dev": "bunx convex dev",
-    "build": "tsc --noEmit && vite build",
+    "build": "vite build && tsc --noEmit",
     "start": "node .output/server/index.mjs",
     "preview": "vite preview",
     "test": "vitest run",
