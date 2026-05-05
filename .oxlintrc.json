@@ -14,6 +14,9 @@
       "version": "19.2",
       "linkComponents": [{ "name": "Link", "attributes": ["to"] }]
     },
+    "vitest": {
+      "typecheck": true
+    },
     "jsx-a11y": {
       "components": {
         "Button": "button",
@@ -29,6 +32,14 @@
   "rules": {
     "react/react-in-jsx-scope": "off",
     "react/rules-of-hooks": "error",
+    "react/only-export-components": [
+      "warn",
+      {
+        "allowConstantExport": true,
+        "customHOCs": ["createFileRoute", "createRootRoute", "createRootRouteWithContext"],
+        "allowExportNames": ["Route", "loader", "meta", "links", "headers", "action"]
+      }
+    ],
     "import/no-cycle": ["error", { "maxDepth": 3 }],
     "typescript/consistent-type-imports": ["error", { "prefer": "type-imports" }],
     "typescript/array-type": ["error", { "default": "generic", "readonly": "generic" }],
@@ -45,6 +56,7 @@
         "jsx-a11y/click-events-have-key-events": "off",
         "jsx-a11y/label-has-associated-control": "off",
         "jsx-a11y/no-static-element-interactions": "off",
+        "react/only-export-components": "off",
         "typescript/no-unsafe-type-assertion": "off"
       }
     },
