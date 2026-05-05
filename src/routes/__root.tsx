@@ -7,12 +7,11 @@ import {
   createRootRouteWithContext,
   HeadContent,
   Link,
-  Outlet,
   Scripts,
   useRouteContext,
 } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
-import { lazy, Suspense, useEffect } from "react"
+import { lazy, Suspense } from "react"
 
 import { DefaultCatchBoundary } from "@/components/default-catch-boundary"
 import { NotFound } from "@/components/not-found"
@@ -80,15 +79,6 @@ const jsonLd = {
   ],
 }
 
-const speculationRules = JSON.stringify({
-  prerender: [
-    {
-      where: { href_matches: "/*" },
-      eagerness: "moderate",
-    },
-  ],
-})
-
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
   convexQueryClient: ConvexQueryClient
@@ -114,6 +104,9 @@ export const Route = createRootRouteWithContext<{
       { name: "format-detection", content: "telephone=no" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: SITE_NAME },
+      // Uncomment and fill in after registering in Google Search Console / Bing Webmaster.
+      // { name: "google-site-verification", content: "YOUR_TOKEN" },
+      // { name: "msvalidate.01", content: "YOUR_TOKEN" },
       ...seo({
         title: SITE_TITLE,
         description: SITE_DESCRIPTION,
@@ -127,6 +120,8 @@ export const Route = createRootRouteWithContext<{
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico", sizes: "32x32" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
+      // Fediverse verification: fill in your own profile URL.
+      // { rel: "me", href: "https://mastodon.social/@ramonclaudio" },
     ],
     scripts: [
       {
@@ -137,36 +132,11 @@ export const Route = createRootRouteWithContext<{
   }),
   errorComponent: DefaultCatchBoundary,
   notFoundComponent: NotFound,
-  component: RootComponent,
+  shellComponent: RootDocument,
 })
 
-function RootComponent() {
-  const context = useRouteContext({ from: Route.id })
-  return (
-    <ConvexBetterAuthProvider
-      client={context.convexQueryClient.convexClient}
-      authClient={authClient}
-      initialToken={context.token}
-    >
-      <RootDocument>
-        <Outlet />
-      </RootDocument>
-    </ConvexBetterAuthProvider>
-  )
-}
-
 function RootDocument({ children }: { children: React.ReactNode }) {
-  // Inject speculation rules imperatively once on mount. React's managed head
-  // updates innerHTML on re-render, which browsers reject for
-  // <script type="speculationrules"> ("rules cannot be modified after processing").
-  useEffect(() => {
-    if (document.querySelector('script[type="speculationrules"]')) return
-    const script = document.createElement("script")
-    script.type = "speculationrules"
-    script.textContent = speculationRules
-    document.head.appendChild(script)
-  }, [])
-
+  const context = useRouteContext({ from: Route.id })
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -181,34 +151,40 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         >
           Skip to content
         </a>
-        <ThemeProvider>
-          <WebVitals />
-          <div className="fixed inset-x-0 top-4 z-40">
-            <div className="mx-auto flex max-w-5xl items-center justify-between px-6">
-              <Link
-                to="/"
-                aria-label="Home"
-                className={cn(
-                  buttonVariants({ variant: "outline", size: "icon" }),
-                  "[&_svg]:size-[1.2rem]",
-                )}
-              >
-                <HugeiconsIcon icon={Home01Icon} strokeWidth={2} />
-              </Link>
-              <div className="flex items-center gap-1.5">
-                <UserMenu />
-                <ThemeToggle />
+        <ConvexBetterAuthProvider
+          client={context.convexQueryClient.convexClient}
+          authClient={authClient}
+          initialToken={context.token}
+        >
+          <ThemeProvider>
+            <WebVitals />
+            <header className="fixed inset-x-0 top-4 z-40">
+              <div className="mx-auto flex max-w-5xl items-center justify-between px-6">
+                <Link
+                  to="/"
+                  aria-label="Home"
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "icon" }),
+                    "[&_svg]:size-[1.2rem]",
+                  )}
+                >
+                  <HugeiconsIcon icon={Home01Icon} strokeWidth={2} />
+                </Link>
+                <div className="flex items-center gap-1.5">
+                  <UserMenu />
+                  <ThemeToggle />
+                </div>
               </div>
-            </div>
-          </div>
-          {children}
-          <Toaster />
-          {Devtools ? (
-            <Suspense fallback={null}>
-              <Devtools />
-            </Suspense>
-          ) : null}
-        </ThemeProvider>
+            </header>
+            <main id="main">{children}</main>
+            <Toaster />
+            {Devtools ? (
+              <Suspense fallback={null}>
+                <Devtools />
+              </Suspense>
+            ) : null}
+          </ThemeProvider>
+        </ConvexBetterAuthProvider>
         <Scripts />
       </body>
     </html>
