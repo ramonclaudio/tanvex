@@ -1,5 +1,6 @@
+/* eslint-disable react-refresh/only-export-components */
 import { ScriptOnce } from "@tanstack/react-router"
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 
 type Theme = "dark" | "light" | "system"
 
@@ -14,11 +15,8 @@ type ThemeProviderState = {
   setTheme: (theme: Theme) => void
 }
 
-function getThemeScript(storageKey: string, defaultTheme: Theme) {
-  const key = JSON.stringify(storageKey)
-  const fallback = JSON.stringify(defaultTheme)
-
-  return `(function(){try{var t=localStorage.getItem(${key});if(t!=='light'&&t!=='dark'&&t!=='system'){t=${fallback}}var d=matchMedia('(prefers-color-scheme: dark)').matches;var r=t==='system'?(d?'dark':'light'):t;var e=document.documentElement;e.classList.add(r);e.style.colorScheme=r}catch(e){}})();`
+function buildThemeScript(storageKey: string, defaultTheme: Theme) {
+  return `(function(){try{var k=${JSON.stringify(storageKey)};var d=${JSON.stringify(defaultTheme)};var t=localStorage.getItem(k);if(t!=='light'&&t!=='dark'&&t!=='system'){t=d}var m=matchMedia('(prefers-color-scheme: dark)').matches;var r=t==='system'?(m?'dark':'light'):t;var e=document.documentElement;e.classList.add(r);e.style.colorScheme=r}catch(e){}})();`
 }
 
 const ThemeProviderContext = createContext<ThemeProviderState>({
@@ -26,19 +24,20 @@ const ThemeProviderContext = createContext<ThemeProviderState>({
   setTheme: () => {},
 })
 
-function applyTheme(theme: Theme) {
+function resolveTheme(theme: Theme): "dark" | "light" {
+  if (theme !== "system") return theme
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+}
+
+function applyTheme(resolved: "dark" | "light") {
   const root = document.documentElement
   root.classList.remove("light", "dark")
-
-  const resolved =
-    theme === "system"
-      ? window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light"
-      : theme
-
   root.classList.add(resolved)
   root.style.colorScheme = resolved
+}
+
+function isTheme(value: unknown): value is Theme {
+  return value === "light" || value === "dark" || value === "system"
 }
 
 export function ThemeProvider({
@@ -46,46 +45,47 @@ export function ThemeProvider({
   defaultTheme = "system",
   storageKey = "theme",
 }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(defaultTheme)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === "undefined") return defaultTheme
     const stored = localStorage.getItem(storageKey)
-    setThemeState(
-      stored === "light" || stored === "dark" || stored === "system" ? stored : defaultTheme,
-    )
-    setMounted(true)
-  }, [defaultTheme, storageKey])
+    return isTheme(stored) ? stored : defaultTheme
+  })
+
+  const mounted = useRef(false)
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true
+      return
+    }
+    applyTheme(resolveTheme(theme))
+  }, [theme])
 
   useEffect(() => {
-    if (!mounted) return
-    applyTheme(theme)
-  }, [theme, mounted])
-
-  useEffect(() => {
-    if (!mounted || theme !== "system") return undefined
-
+    if (theme !== "system") return undefined
     const media = window.matchMedia("(prefers-color-scheme: dark)")
-    const onChange = () => applyTheme("system")
+    const onChange = () => applyTheme(media.matches ? "dark" : "light")
     media.addEventListener("change", onChange)
     return () => media.removeEventListener("change", onChange)
-  }, [theme, mounted])
+  }, [theme])
 
-  const setTheme = (next: Theme) => {
-    localStorage.setItem(storageKey, next)
-    setThemeState(next)
-  }
+  const setTheme = useCallback(
+    (next: Theme) => {
+      localStorage.setItem(storageKey, next)
+      setThemeState(next)
+    },
+    [storageKey],
+  )
+
+  const value = useMemo(() => ({ theme, setTheme }), [theme, setTheme])
 
   return (
-    <ThemeProviderContext value={{ theme, setTheme }}>
-      <ScriptOnce>{getThemeScript(storageKey, defaultTheme)}</ScriptOnce>
+    <ThemeProviderContext value={value}>
+      <ScriptOnce>{buildThemeScript(storageKey, defaultTheme)}</ScriptOnce>
       {children}
     </ThemeProviderContext>
   )
 }
 
 export function useTheme() {
-  const context = useContext(ThemeProviderContext)
-  if (context === undefined) throw new Error("useTheme must be used within a ThemeProvider")
-  return context
+  return useContext(ThemeProviderContext)
 }
