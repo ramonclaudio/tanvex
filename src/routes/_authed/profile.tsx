@@ -64,13 +64,13 @@ function ProfilePage() {
   }, [isLoading, isAuthenticated, navigate])
 
   return (
-    <main id="main" className="mx-auto w-full max-w-5xl px-6 py-16 sm:py-24">
+    <div className="mx-auto w-full max-w-5xl px-6 py-16 sm:py-24">
       {isAuthenticated || (preloadedUser && isLoading) ? (
         <ProfileContent preloadedUser={preloadedUser} />
       ) : (
         <ProfileSkeleton />
       )}
-    </main>
+    </div>
   )
 }
 

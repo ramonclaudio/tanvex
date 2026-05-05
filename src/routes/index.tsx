@@ -77,7 +77,7 @@ const highlights = [
   "Avatar uploads to Convex storage (`image/*`, max 5MB)",
   "Rate limits on every auth and API endpoint",
   "SSR auth that works during server render",
-  "Speculation Rules API prerenders internal links on 200ms hover",
+  'Route-level preloading via TanStack Router `defaultPreload: "intent"`',
 ]
 
 function Home() {
@@ -98,7 +98,7 @@ function Home() {
   }
 
   return (
-    <main id="main" className="mx-auto w-full max-w-5xl px-6 py-16 sm:py-24">
+    <div className="mx-auto w-full max-w-5xl px-6 py-16 sm:py-24">
       <section className="flex flex-col items-start gap-6">
         <div className="flex items-center gap-3">
           <div
@@ -277,7 +277,7 @@ function Home() {
           ramonclaudio/tanvex
         </a>
       </footer>
-    </main>
+    </div>
   )
 }
 

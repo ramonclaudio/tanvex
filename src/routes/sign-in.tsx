@@ -146,10 +146,7 @@ function SignInPage() {
   // or swap them back onto the sign-in form mid sign-up flow. Revisit once
   // the latch ships upstream.
   return (
-    <main
-      id="main"
-      className="mx-auto min-h-[calc(100vh-4rem)] w-full max-w-5xl px-6 py-16 sm:py-24"
-    >
+    <div className="mx-auto min-h-[calc(100vh-4rem)] w-full max-w-5xl px-6 py-16 sm:py-24">
       <div className="mx-auto flex w-full max-w-sm flex-col gap-6">
         {phase.kind !== "default" ? (
           <OTPFlows phase={phase} setPhase={setPhase} resetToSignIn={resetToDefault} />
@@ -159,7 +156,7 @@ function SignInPage() {
           <UnauthedView setPhase={setPhase} />
         )}
       </div>
-    </main>
+    </div>
   )
 }
 

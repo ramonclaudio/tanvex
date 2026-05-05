@@ -35,7 +35,13 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       warmup: {
-        clientFiles: ["./src/**/*.{ts,tsx}"],
+        clientFiles: [
+          "./src/router.tsx",
+          "./src/routes/**/*.{ts,tsx}",
+          "./src/components/**/*.tsx",
+          "./src/lib/*.ts",
+          "./src/styles.css",
+        ],
       },
     },
     resolve: {
