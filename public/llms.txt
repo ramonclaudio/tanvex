@@ -5,15 +5,15 @@
 ## Stack
 
 - TanStack Start + TanStack Router (file-based routing, SSR via Nitro 3)
-- Convex 1.34 backend with `@convex-dev/better-auth`, `@convex-dev/rate-limiter`, `@convex-dev/resend`
-- Better Auth 1.6.5 with the `emailOTP` and `username` plugins
+- Convex 1.37 backend with `@convex-dev/better-auth`, `@convex-dev/rate-limiter`, `@convex-dev/resend`
+- Better Auth 1.6.9 with the `emailOTP` and `username` plugins
 - Vite 8 (Rolldown bundler, Oxc toolchain)
 - React 19 with the automatic JSX transform
 - TypeScript 6, strict + verbatimModuleSyntax
 - Tailwind CSS v4 via @tailwindcss/vite
 - shadcn/ui base-luma theme on @base-ui/react primitives
 - HugeIcons + Geist Variable font
-- Oxlint 1.59 (232 rules, 8 plugins, type-aware via oxlint-tsgolint)
+- Oxlint 1.63 (240 rules, 8 plugins, type-aware via oxlint-tsgolint)
 - Oxfmt (native import + Tailwind + package.json sorting)
 - Vitest 4 + @testing-library/react + jsdom
 - Zod v4 on the client, Convex validators on the backend
@@ -37,7 +37,7 @@ Email + password and username + password sign-in. Email verification via OTP thr
 - `convex/email.ts`: Resend helpers + OTP templates
 - `convex/rateLimit.ts`: token-bucket limiter config
 - `convex/schema.ts`: users table (identity merged from Better Auth)
-- `src/routes/__root.tsx`: root layout, head, theme, Toaster, skip link
+- `src/routes/__root.tsx`: root layout (`shellComponent`), head, theme, Toaster, header bar, `<main id="main">`
 - `src/routes/sign-in.tsx`: auth UI (signin, signup, OTP, password reset)
 - `src/routes/_authed/profile.tsx`: profile editor with avatar upload and change-password
 - `src/lib/auth-client.ts` / `auth-server.ts`: Better Auth clients

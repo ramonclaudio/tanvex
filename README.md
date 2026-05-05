@@ -41,8 +41,8 @@ Flags: `--local` (Docker), `--fresh` (new deployment), `--version`, `--help`.
 ## Stack
 
 - TanStack Start + TanStack Router with file-based routing
-- Convex 1.34 backend with `@convex-dev/better-auth`, `@convex-dev/rate-limiter`, `@convex-dev/resend`
-- Better Auth 1.6.5 with the `emailOTP` and `username` plugins
+- Convex 1.37 backend with `@convex-dev/better-auth`, `@convex-dev/rate-limiter`, `@convex-dev/resend`
+- Better Auth 1.6.9 with the `emailOTP` and `username` plugins
 - Vite 8 with Rolldown and Oxc plugins
 - Nitro 3 for SSR output, platform-agnostic
 - React 19 with the automatic JSX transform
@@ -51,7 +51,7 @@ Flags: `--local` (Docker), `--fresh` (new deployment), `--version`, `--help`.
 - shadcn/ui `base-luma` on `@base-ui/react` primitives (not Radix), scaffolded via `bunx --bun shadcn@latest init --preset b1VlJDbW --base base --template start`
 - HugeIcons + Geist Variable font
 - `DESIGN.md` documents the full system (colors, typography, radii, spacing, component recipes); lint with `bunx @google/design.md lint DESIGN.md`
-- Oxlint 1.59 with 232 rules across 8 native plugins, type-aware via `oxlint-tsgolint`
+- Oxlint 1.63 with 240 rules across 8 native plugins, type-aware via `oxlint-tsgolint`
 - Oxfmt with native import sorting, Tailwind class sorting, package.json field sorting
 - Vitest 4 + `@testing-library/react` + jsdom
 - Zod v4 on the client, Convex validators on the backend
@@ -96,8 +96,8 @@ SSR auth works because the root route fetches the auth token via `createServerFn
 ### Launch baseline
 
 - Nitro `routeRules` in `vite.config.ts` emit platform-agnostic security headers on every preset (Vercel, Cloudflare, Netlify, Node, Bun): `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` (camera/mic/geo off), `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `Origin-Agent-Cluster`
-- Speculation Rules API: internal links prerender on 200ms hover for instant navigation
-- Skip link, `<main id="main">` landmark, `prefers-reduced-motion` respected globally
+- Route-level preloading via TanStack Router `defaultPreload: "intent"`: hover triggers prefetch of the route's JS chunk and loader data
+- Top header bar with home icon, user menu, and theme toggle, semantic `<header>` + `<main id="main">` landmarks, working skip link, `prefers-reduced-motion` respected globally
 - `public/.well-known/security.txt` per RFC 9116
 - `public/llms.txt` + `public/llms-full.txt` for Claude, Perplexity, ChatGPT Search
 - `env.example` documenting the `VITE_SITE_URL` pattern, typed via `src/vite-env.d.ts`
@@ -123,25 +123,25 @@ Hosted on Convex at `https://<project>.convex.site`, CORS-locked to `SITE_URL`.
 
 ## Scripts
 
-| Script                       | What it does                                       |
-| ---------------------------- | -------------------------------------------------- |
-| `bun run setup`              | wipe, reinstall, configure Convex + Resend         |
-| `bun run setup --local`      | same, with Docker Convex                           |
-| `bun run dev`                | Vite + Convex dev servers on `:3000`               |
-| `bun run build`              | `tsc --noEmit && vite build`                       |
-| `bun run start`              | Nitro SSR server from `.output/`                   |
-| `bun run preview`            | `vite preview`                                     |
-| `bun run analyze`            | `ANALYZE=1 vite build` with rollup visualizer      |
-| `bun run typecheck`          | `tsc --noEmit`                                     |
-| `bun run lint`               | `oxlint`                                           |
-| `bun run lint:fix`           | `oxlint --fix` (safe fixes only)                   |
-| `bun run lint:fix:suggest`   | `oxlint --fix --fix-suggestions`                   |
-| `bun run lint:fix:dangerous` | `oxlint --fix --fix-suggestions --fix-dangerously` |
-| `bun run fmt`                | `oxfmt`                                            |
-| `bun run fmt:check`          | `oxfmt --check`                                    |
-| `bun run test`               | `vitest run`                                       |
-| `bun run test:watch`         | `vitest`                                           |
-| `bun run clean`              | Trash `node_modules`, build artifacts, `.DS_Store` |
+| Script                       | What it does                                                                                                                    |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run setup`              | wipe, reinstall, configure Convex + Resend                                                                                      |
+| `bun run setup --local`      | same, with Docker Convex                                                                                                        |
+| `bun run dev`                | Vite + Convex dev servers on `:3000`                                                                                            |
+| `bun run build`              | `vite build && tsc --noEmit`                                                                                                    |
+| `bun run start`              | Nitro SSR server from `.output/`                                                                                                |
+| `bun run preview`            | `vite preview`                                                                                                                  |
+| `bun run analyze`            | `ANALYZE=1 vite build` with rollup visualizer                                                                                   |
+| `bun run typecheck`          | `tsc --noEmit`                                                                                                                  |
+| `bun run lint`               | `oxlint`                                                                                                                        |
+| `bun run lint:fix`           | `oxlint --fix` (safe fixes only)                                                                                                |
+| `bun run lint:fix:suggest`   | `oxlint --fix --fix-suggestions`                                                                                                |
+| `bun run lint:fix:dangerous` | `oxlint --fix --fix-suggestions --fix-dangerously`                                                                              |
+| `bun run fmt`                | `oxfmt`                                                                                                                         |
+| `bun run fmt:check`          | `oxfmt --check`                                                                                                                 |
+| `bun run test`               | `vitest run`                                                                                                                    |
+| `bun run test:watch`         | `vitest`                                                                                                                        |
+| `bun run clean`              | Full reset: trash artifacts, reinstall, convex ai-files update, convex dev --once, vite build, fmt:check, lint, typecheck, test |
 
 ## Adding shadcn components
 
@@ -217,7 +217,7 @@ src/
 │   ├── site.ts                    # SITE_URL, SITE_NAME, SITE_TITLE, AUTHOR_*
 │   └── utils.ts                   # cn() class merger
 ├── routes/
-│   ├── __root.tsx                 # root layout, head, theme, Toaster, skip link
+│   ├── __root.tsx                 # shellComponent: html/body shell, header bar, theme, Toaster, `<main id="main">`
 │   ├── _authed.tsx                # auth gate
 │   ├── _authed/profile.tsx        # profile editor + avatar upload + change password
 │   ├── api/auth/                  # Better Auth proxy for TanStack Start
@@ -228,8 +228,11 @@ src/
 ├── styles.css                     # Tailwind v4 + base-luma + reduced-motion
 └── vite-env.d.ts                  # typed import.meta.env
 
-patches/                           # bun patch overlays (@convex-dev/better-auth)
-scripts/setup.ts                   # one-command onboarding
+.vscode/                           # workspace settings (oxc default formatter, tailwind classRegex) + extension recommendations
+patches/                           # bun patch overlays (`@hugeicons/react`, `better-auth`)
+scripts/
+├── clean.ts                       # `bun run clean`: full reset + verify chain
+└── setup.ts                       # one-command onboarding
 vite.config.ts                     # Vite, Nitro, security headers
 ```
 

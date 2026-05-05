@@ -19,7 +19,7 @@ Unlike other TanStack + shadcn starters, this one ships:
 - Base UI (`@base-ui/react`) primitives
 - Oxlint + Oxfmt from the Oxc toolchain
 - base-luma theme (OKLch, rounded-4xl, soft rings) instead of neutral/stone
-- Launch baseline: OG/Twitter meta, JSON-LD @graph, PWA icons (any + maskable + monochrome), PWA screenshots, manifest with shortcuts and launch_handler, robots.txt with AI crawler opt-outs, sitemap.xml, security.txt, llms.txt, Nitro routeRules security headers, skip link, prefers-reduced-motion, theme-color per scheme, color-scheme meta, Speculation Rules API for prerender
+- Launch baseline: OG/Twitter meta, JSON-LD @graph, PWA icons (any + maskable + monochrome), PWA screenshots, manifest with shortcuts and launch_handler, robots.txt with AI crawler opt-outs, sitemap.xml, security.txt, llms.txt, Nitro routeRules security headers, header bar with home icon and theme toggle, semantic header/main landmarks, skip link, prefers-reduced-motion, theme-color per scheme, color-scheme meta, TanStack Router defaultPreload intent
 
 ## Repository
 
@@ -31,8 +31,8 @@ Unlike other TanStack + shadcn starters, this one ships:
 ## Stack detail
 
 - **TanStack Start** + **TanStack Router**: file-based routing, SSR via Nitro 3
-- **Convex 1.34**: backend, real-time queries, storage, HTTP actions
-- **Better Auth 1.6.5**: sessions, email + password, `emailOTP` + `username` plugins, JWKS for Convex JWT auth
+- **Convex 1.37**: backend, real-time queries, storage, HTTP actions
+- **Better Auth 1.6.9**: sessions, email + password, `emailOTP` + `username` plugins, JWKS for Convex JWT auth
 - **`@convex-dev/better-auth`**: Convex adapter for Better Auth, SSR-safe
 - **`@convex-dev/resend`**: Resend component with webhook handler + delivery-event persistence
 - **`@convex-dev/rate-limiter`**: token-bucket limiter for API endpoints and user actions
@@ -46,7 +46,7 @@ Unlike other TanStack + shadcn starters, this one ships:
 - **Zod v4**: client-side validation; Convex validators on the backend
 - **HugeIcons**: `@hugeicons/core-free-icons` + `@hugeicons/react`
 - **Geist Variable**: via `@fontsource-variable/geist`
-- **Oxlint 1.59**: 232 rules, 8 plugins, type-aware via `oxlint-tsgolint`
+- **Oxlint 1.63**: 240 rules, 8 plugins, type-aware via `oxlint-tsgolint`
 - **Oxfmt**: native import + Tailwind + package.json field sorting
 - **Vitest 4**: jsdom environment + `@testing-library/react`
 - **Sonner**: toast primitive
@@ -97,7 +97,7 @@ Hosted on Convex at `https://<project>.convex.site`, CORS-locked to `SITE_URL`.
 - `convex/schema.ts`: users table (identity merged from Better Auth)
 - `convex/users.ts`: profile queries and mutations, avatar upload URL, avatar delete
 - `convex/constants.ts`: username validation (shared between client and server)
-- `src/routes/__root.tsx`: root layout, head (meta + OG + JSON-LD + speculation rules), theme, Toaster, skip link
+- `src/routes/__root.tsx`: root layout (`shellComponent`), head (meta + OG + JSON-LD), theme, Toaster, header bar, `<main id="main">`
 - `src/routes/index.tsx`: demo homepage
 - `src/routes/sign-in.tsx`: auth UI (signin, signup, OTP verify, password reset)
 - `src/routes/_authed.tsx`: auth gate for protected routes
@@ -124,7 +124,7 @@ Hosted on Convex at `https://<project>.convex.site`, CORS-locked to `SITE_URL`.
 - `bun run setup --local`: same, with Docker Convex
 - `bun run setup --fresh`: new Convex deployment (wipes `.env.local`)
 - `bun run dev`: concurrent Vite + `convex dev` on `:3000`
-- `bun run build`: `tsc --noEmit && vite build`
+- `bun run build`: `vite build && tsc --noEmit`
 - `bun run start`: Nitro SSR server from `.output/`
 - `bun run preview`: `vite preview`
 - `bun run typecheck`: `tsc --noEmit`
@@ -132,6 +132,7 @@ Hosted on Convex at `https://<project>.convex.site`, CORS-locked to `SITE_URL`.
 - `bun run fmt` / `fmt:check`: oxfmt
 - `bun run test` / `test:watch`: vitest
 - `bun run analyze`: build with rollup-plugin-visualizer (`.output/stats.html`)
+- `bun run clean`: full reset via `scripts/clean.ts` (trash artifacts, reinstall, convex ai-files update, convex dev --once, vite build, fmt:check, lint, typecheck, test)
 
 ## Environment variables
 
