@@ -6,13 +6,7 @@
 
 TanStack Start + Convex + Better Auth + Resend, wired end-to-end. Email + password and username sign-in, OTP verification, avatar uploads, rate-limited HTTP API, SSR auth. Vite 8 with Rolldown+Oxc, Tailwind v4, shadcn/ui `base-luma` on Base UI, Oxlint + Oxfmt, Vitest 4, React 19, TypeScript 6. Use any PM: bun, pnpm, npm, or yarn.
 
-## Live demos
-
-- Vercel: https://tanvex-demo.vercel.app
-- Netlify: https://tanvex.netlify.app
-- Cloudflare Workers: https://tanvex.hello-8fa.workers.dev
-
-Same codebase on each host, deploying via the host's native Git integration.
+Live demo: https://tanvex-demo.vercel.app
 
 ## Quick start
 
@@ -31,66 +25,6 @@ Open [http://localhost:3000](http://localhost:3000). Sign up with a real email, 
 For local Convex via Docker instead of cloud: `bun run setup:local`.
 
 `setup` wipes `node_modules` and build artifacts, reinstalls deps with the detected PM, runs `convex dev` (creates a project, writes `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL` to `.env.local`, pushes functions, regenerates types), auto-generates `BETTER_AUTH_SECRET`, and prompts for your Resend key, sender, and app name. Re-running won't rotate existing Convex env vars; for one-off changes use `bunx convex env set NAME VALUE`.
-
-## What's wired
-
-### Auth
-
-Email + password or username + password. Sign-up takes name, email, password (required), plus username and avatar (optional). Username is 3-30 chars, alphanumeric with `_` and `.`, debounced availability check against reserved names. Avatars are `image/*`, max 5MB, stored in Convex. Email verification is OTP via Better Auth's `emailOTP` plugin, delivered through Resend. Sessions: 7 days, refresh at 1 day remaining, 10-min `freshAge` for sensitive ops.
-
-SSR auth works end-to-end: the root route fetches the auth token via `createServerFn`, sets it on `convexQueryClient` before render, hands off on hydrate.
-
-Rate limits at the HTTP layer:
-
-```
-/sign-in/*                            5/min
-/sign-up/*                            3/min
-/email-otp/request-password-reset     3/hour
-/email-otp/reset-password             3/min
-/email-otp/send-verification-otp      3/min
-/list-sessions                        30/min
-/get-session                          60/min
-```
-
-### Routes
-
-```
-/              public
-/sign-in       public (redirects when signed in)
-/profile       protected (redirects to /sign-in)
-/api/auth/*    Better Auth proxy
-```
-
-### HTTP API
-
-Hosted on Convex at `https://<project>.convex.site`, CORS-locked to `SITE_URL` (plus `TRUSTED_ORIGINS` if set).
-
-```
-GET  /api/health                            no auth, no limit
-GET  /api/users?id=<userId>                 no auth, apiRead (IP)
-GET  /api/users/list?cursor=...&limit=...   no auth, apiRead (IP)
-```
-
-### SEO and social
-
-- `src/lib/seo.ts`: absolute `og:image`, `og:url`, `og:image:width/height`, `twitter:card` auto-promotion
-- Canonical link, `og:site_name`, full Twitter meta, JSON-LD `@graph` (`WebSite` + `SoftwareSourceCode` + `Person`)
-- OG image: 2400×1260 PNG (2x of 1200×630), under 500KB, unfurls on X/Facebook/LinkedIn/Discord/Slack/iMessage
-- `public/sitemap.xml`, `public/robots.txt` with AI training crawler opt-outs (GPTBot, ClaudeBot, CCBot, Google-Extended, Applebot-Extended, Bytespider, meta-externalagent)
-- `public/.well-known/security.txt` per RFC 9116
-- `public/llms.txt` + `public/llms-full.txt`
-
-### PWA + icons
-
-- `favicon.svg` primary + multi-size `favicon.ico` fallback, `apple-touch-icon.png` (180×180)
-- `manifest.webmanifest` with `any`, `maskable`, `monochrome` icons + wide/narrow screenshots
-- `theme-color` per scheme via `media` queries, `color-scheme`, `mobile-web-app-capable`
-
-### Launch baseline
-
-- Nitro `routeRules` in `vite.config.ts` emit security headers on every preset: `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` (camera/mic/geo off), `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `Origin-Agent-Cluster`
-- TanStack Router `defaultPreload: "intent"`: hover prefetches the route's JS chunk and loader data
-- Top header bar with home icon, user menu, theme toggle. Semantic `<header>` + `<main id="main">`, working skip link, `prefers-reduced-motion` respected globally
 
 ## Scripts
 
