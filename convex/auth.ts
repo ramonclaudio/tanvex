@@ -19,24 +19,7 @@ import {
 } from "./constants"
 import { sendAuthOTP } from "./email"
 import { authenticationRequired } from "./errors"
-
-/**
- * Get the site URL from environment.
- * Logs a warning and returns undefined if not set so Better Auth can handle it.
- * Allows the module to load even if the env var is missing (e.g. during codegen).
- */
-function getSiteUrl(): string | undefined {
-  const url = process.env.SITE_URL
-  if (!url) {
-    console.warn(
-      "[Auth] SITE_URL environment variable is not set. " +
-        "This is required for auth redirects to work correctly. " +
-        "Set it in your Convex dashboard or .env.local file.",
-    )
-    return undefined
-  }
-  return url
-}
+import { getSiteUrl, getTrustedOrigins } from "./origins"
 
 const authFunctions: AuthFunctions = internal.auth
 
@@ -105,24 +88,6 @@ export const { onCreate, onDelete } = authComponent.triggersApi()
 
 // Export client API for AuthBoundary and other client-side auth checks
 export const { getAuthUser } = authComponent.clientApi()
-
-/**
- * Parse `TRUSTED_ORIGINS` env var (comma-separated URLs) for sites other than
- * `SITE_URL` that are allowed to hit auth endpoints. Use when the same Convex
- * backend serves multiple frontend deploys (e.g. Vercel + Netlify + custom
- * domain). Better Auth rejects state-changing requests whose Origin header
- * doesn't match `baseURL` or sit in this list.
- *
- *   bunx convex env set TRUSTED_ORIGINS "https://tanvex.netlify.app,https://www.example.com" --prod
- */
-function getTrustedOrigins(): string[] {
-  const raw = process.env.TRUSTED_ORIGINS
-  if (!raw) return []
-  return raw
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
 
 export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
   ({

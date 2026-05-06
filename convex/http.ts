@@ -6,31 +6,9 @@ import { api, internal } from "./_generated/api"
 import { httpAction, internalMutation } from "./_generated/server"
 import { authComponent, createAuth } from "./auth"
 import { resend } from "./email"
+import { getAllowedOrigins } from "./origins"
 import { consumeLimit } from "./rateLimit"
 import type { RateLimitName } from "./rateLimit"
-
-// ============================================================================
-// Environment Validation
-// ============================================================================
-
-/**
- * Get the site URL with validation.
- * Logs warning in development, throws in production if missing.
- */
-function getSiteUrl(): string {
-  const url = process.env.SITE_URL
-  if (!url) {
-    // In production, this is a critical configuration error
-    if (process.env.NODE_ENV === "production") {
-      console.error(
-        "[HTTP] CRITICAL: SITE_URL environment variable is not set. " +
-          "CORS will fall back to localhost which is insecure in production.",
-      )
-    }
-    return "http://localhost:3000"
-  }
-  return url
-}
 
 // ============================================================================
 // Internal mutation for HTTP rate limiting
@@ -84,19 +62,13 @@ http.route({
   }),
 })
 
-// CORS configuration for custom API endpoints
-const siteUrl = getSiteUrl()
+// CORS configuration for custom API endpoints. Origins read from `SITE_URL` +
+// `TRUSTED_ORIGINS` (see `convex/origins.ts`) so multi-host deploys (Vercel
+// + Netlify + custom domain) all reach `/api/*` from the same Convex backend.
 const corsConfig = {
-  // Allow requests from your frontend domain(s)
-  allowedOrigins: [
-    siteUrl,
-    // Add additional allowed origins here for multi-domain setups
-  ],
-  // Allow credentials for auth cookies
+  allowedOrigins: getAllowedOrigins(),
   allowCredentials: true,
-  // Allowed headers
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  // Cache preflight requests for 1 day
   browserCacheMaxAge: 86400,
 }
 

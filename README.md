@@ -231,6 +231,17 @@ bunx convex env set RESEND_TEST_MODE false --prod
 
 See `.env.convex.example` for the full Convex-side reference.
 
+#### Multi-host deploys (e.g. Vercel + Netlify)
+
+When the same Convex backend serves more than one frontend deploy, set `TRUSTED_ORIGINS` (comma-separated) on the deployment for the additional URLs. `SITE_URL` is the canonical/baseURL host (used for emails, redirects, OAuth callbacks). `TRUSTED_ORIGINS` is the supplementary allowlist for auth + `/api/*` CORS.
+
+```bash
+bunx convex env set TRUSTED_ORIGINS "https://your-app.netlify.app" --prod
+bunx convex env set TRUSTED_ORIGINS "https://your-app.netlify.app"
+```
+
+Limitation: emails and magic links always point at `SITE_URL`. For full per-host isolation, run a separate Convex deployment per host instead.
+
 ### Vercel
 
 Import the repo in the [Vercel dashboard](https://vercel.com/new), then push your env vars. Production points at prod Convex; Preview and Development point at dev Convex (PR previews use dev data, not real users).
