@@ -17,9 +17,10 @@
  *     bunx convex env set TRUSTED_ORIGINS "https://your-app.netlify.app,https://www.example.com" --prod
  *
  * Limitation: emails, magic links, and OAuth callbacks always point to
- * `SITE_URL`. If a user signs up on `tanvex.netlify.app`, the verification
- * email link is `https://tanvex-demo.vercel.app/...`. For production with
- * multiple equal hosts, run a separate Convex deployment per host.
+ * `SITE_URL`. If a user signs up on a non-canonical host (e.g. one of the
+ * URLs in `TRUSTED_ORIGINS`), the verification email link points back at
+ * `SITE_URL`. For production with multiple equal hosts, run a separate
+ * Convex deployment per host instead.
  */
 
 /**
