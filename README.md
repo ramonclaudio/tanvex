@@ -189,16 +189,9 @@ Ships delivery events (`delivered`, `bounced`, `complained`) back to Convex. Aut
 Two GitHub Actions workflows run on every push to `main` and every PR:
 
 - **`.github/workflows/ci.yml`** (matrix verify gate) — for each of `bun`, `pnpm`, `npm`, `yarn`: install, typecheck, lint, fmt:check, test, build. Any failure on any PM blocks merge. This is what proves the runtime-agnostic claim.
-- **`.github/workflows/deploys.yml`** (deploy verifier) — three parallel jobs (Vercel / Netlify / Cloudflare Workers). Each polls its public URL until the `x-commit-sha` meta tag matches the just-pushed commit, fails after ~10 min if a platform never catches up. The Netlify job also fires the build hook (`NETLIFY_BUILD_HOOK_URL` repo secret) to bypass content-dedupe.
+- **`.github/workflows/deploys.yml`** (deploy verifier) — two parallel jobs (Vercel / Cloudflare Workers). Each polls its public URL until the `x-commit-sha` meta tag matches the just-pushed commit, fails after ~10 min if a platform never catches up. Netlify is excluded from CI to stay under the free build minutes cap; it still auto-deploys via its native Git integration on push.
 
 The SHA tag is rendered by `__root.tsx` from `import.meta.env.VITE_COMMIT_SHA`, baked at build time by `vite.config.ts` from `VERCEL_GIT_COMMIT_SHA` / `COMMIT_REF` / `WORKERS_CI_COMMIT_SHA` / `CF_PAGES_COMMIT_SHA` / `GITHUB_SHA` (whichever the host CI provides).
-
-Set the Netlify build hook once, after wiring up Netlify (see [Deploying → Netlify](#netlify)):
-
-```bash
-# Netlify dashboard -> Site -> Build & deploy -> Build hooks -> Add build hook
-gh secret set NETLIFY_BUILD_HOOK_URL --repo <owner>/<repo>
-```
 
 ## Deploying
 
@@ -404,8 +397,7 @@ Files to update:
 - `public/.well-known/security.txt`: `Contact:` and `Canonical:`
 - `.env.example`
 - `README.md`: badge URLs at the top (point them at your fork's CI/Deploys workflows and your platform demo URLs)
-- `.github/workflows/deploys.yml`: replace `tanvex-demo.vercel.app`, `tanvex.netlify.app`, and `tanvex.hello-8fa.workers.dev` with your own deploy URLs
-- Repo secrets: set `NETLIFY_BUILD_HOOK_URL` (after creating the build hook in Netlify) so the Deploys workflow can fire it
+- `.github/workflows/deploys.yml`: replace `tanvex-demo.vercel.app` and `tanvex.hello-8fa.workers.dev` with your own deploy URLs
 
 ## License
 
