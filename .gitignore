@@ -23,3 +23,6 @@ __unconfig*
 !.vscode/settings.json
 !.vscode/extensions.json
 .vercel
+
+# AGENTS.md is the convex ai-files entry-point, shared with cloners
+!AGENTS.md
