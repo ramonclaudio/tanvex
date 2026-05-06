@@ -195,7 +195,7 @@ Then set `CONVEX_DEPLOYMENT=prod:your-project-name` and `SITE_URL` on your front
 
 ### Vercel
 
-Push the repo, import in the [Vercel dashboard](https://vercel.com/new). Set `BUN_VERSION=1.3.13` as a project env var so Vercel uses a bun version that resolves TanStack's nested zod correctly (the preinstalled version lags). The shipped `vercel.json` is minimal (just the build command for documentation); Vercel auto-detects bun from `bun.lock` and Nitro emits to `.vercel/output/`.
+Push the repo, import in the [Vercel dashboard](https://vercel.com/new). The shipped `vercel.json` pins bun to 1.3.13 via `installCommand` so TanStack's nested zod resolves correctly (Vercel's preinstalled bun lags, and the `BUN_VERSION` env var isn't honored by their bun integration as of CLI 51.6.1). Vercel auto-detects the framework from `bun.lock` and Nitro emits to `.vercel/output/`.
 
 ### Netlify
 
