@@ -9,17 +9,18 @@ Every TanStack Start starter on GitHub ships last year's choices, and most don't
 
 Email + password auth with username sign-in and OTP verification through Resend. User profiles with avatar uploads to Convex storage. Rate limits on auth and API endpoints. SSR auth that works during server render. On top of Vite 8 with Rolldown+Oxc, Tailwind v4, shadcn/ui `base-luma` on Base UI `@base-ui/react` primitives, Oxlint and Oxfmt from the Oxc toolchain.
 
-TanStack Start + Convex + Better Auth + React 19 + TypeScript 6 + Tailwind v4 + Zod v4. Bun-powered scripts.
+TanStack Start + Convex + Better Auth + React 19 + TypeScript 6 + Tailwind v4 + Zod v4. Runtime-agnostic: setup, daily workflow, and CI all run under bun, pnpm, npm, or yarn. The `scripts/_run.mjs` launcher picks bun -> tsx -> npx tsx automatically.
 
 ## Install
 
-Needs [Bun](https://bun.sh), a [Convex](https://convex.dev) account (free tier works), and a [Resend](https://resend.com/api-keys) API key (`re_...`, free tier is 3k/month).
+Needs Node 20+ or [Bun](https://bun.sh), a [Convex](https://convex.dev) account (free tier works), and a [Resend](https://resend.com/api-keys) API key (`re_...`, free tier is 3k/month).
 
 ```bash
 git clone https://github.com/ramonclaudio/tanvex.git
 cd tanvex
-bun run setup
-bun run dev
+npm install         # or bun install, pnpm install, yarn install
+npm run setup       # or bun run setup, pnpm setup, yarn setup
+npm run dev         # or bun run dev, pnpm dev, yarn dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). Sign up with a real email, you'll get an OTP from Resend.
@@ -27,16 +28,16 @@ Open [http://localhost:3000](http://localhost:3000). Sign up with a real email, 
 For local Convex via Docker instead of cloud:
 
 ```bash
-bun run setup --local
+npm run setup:local
 ```
 
-## What `bun run setup` does
+## What `setup` does
 
-Wipes `node_modules`, lockfile, build artifacts, caches, and generated files. Runs `bun install`. Runs `bunx convex dev --once` which opens browser login on first run, creates a project, writes `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL` to `.env.local`, pushes functions, regenerates types. Auto-generates `BETTER_AUTH_SECRET`. Prompts for your Resend key, sender address, and app name.
+Wipes `node_modules`, lockfile, build artifacts, caches, and generated files. Reinstalls deps with the detected package manager. Runs `convex dev` which opens browser login on first run, creates a project, writes `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL` to `.env.local`, pushes functions, regenerates types. Auto-generates `BETTER_AUTH_SECRET`. Prompts for your Resend key, sender address, and app name.
 
-Re-running setup does not rotate existing Convex env vars. For one-off changes use `bunx convex env set NAME VALUE`.
+Re-running setup does not rotate existing Convex env vars. For one-off changes use `npx convex env set NAME VALUE`.
 
-Flags: `--local` (Docker), `--fresh` (new deployment), `--version`, `--help`.
+Scripts: `setup`, `setup:local` (Docker), `setup:fresh` (new deployment). Flags: `--version`, `--help`.
 
 ## Stack
 
@@ -48,15 +49,15 @@ Flags: `--local` (Docker), `--fresh` (new deployment), `--version`, `--help`.
 - React 19 with the automatic JSX transform
 - TypeScript 6, `strict`, `verbatimModuleSyntax`
 - Tailwind CSS v4 via `@tailwindcss/vite`
-- shadcn/ui `base-luma` on `@base-ui/react` primitives (not Radix), scaffolded via `bunx --bun shadcn@latest init --preset b1VlJDbW --base base --template start`
+- shadcn/ui `base-luma` on `@base-ui/react` primitives (not Radix), scaffolded via `npx shadcn@latest init --preset b1VlJDbW --base base --template start`
 - HugeIcons + Geist Variable font
-- `DESIGN.md` documents the full system (colors, typography, radii, spacing, component recipes); lint with `bunx @google/design.md lint DESIGN.md`
+- `DESIGN.md` documents the full system (colors, typography, radii, spacing, component recipes); lint with `npx @google/design.md lint DESIGN.md`
 - Oxlint 1.63 with 240 rules across 8 native plugins, type-aware via `oxlint-tsgolint`
 - Oxfmt with native import sorting, Tailwind class sorting, package.json field sorting
 - Vitest 4 + `@testing-library/react` + jsdom
 - Zod v4 on the client, Convex validators on the backend
 - Sonner toasts, theme provider, web vitals reporter
-- Bun as package manager and script runner (setup CLI uses `Bun.spawn`, `Bun.$`, `Bun.file`)
+- Runtime-agnostic: every script runs under bun, pnpm, npm, or yarn. `scripts/_run.mjs` picks bun -> tsx -> npx tsx; `setup.ts` and `clean.ts` use only node: built-ins, no Bun globals
 
 ## What's wired
 
@@ -123,30 +124,33 @@ Hosted on Convex at `https://<project>.convex.site`, CORS-locked to `SITE_URL`.
 
 ## Scripts
 
-| Script                       | What it does                                                                                                                    |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `bun run setup`              | wipe, reinstall, configure Convex + Resend                                                                                      |
-| `bun run setup --local`      | same, with Docker Convex                                                                                                        |
-| `bun run dev`                | Vite + Convex dev servers on `:3000`                                                                                            |
-| `bun run build`              | `vite build && tsc --noEmit`                                                                                                    |
-| `bun run start`              | Nitro SSR server from `.output/`                                                                                                |
-| `bun run preview`            | `vite preview`                                                                                                                  |
-| `bun run analyze`            | `ANALYZE=1 vite build` with rollup visualizer                                                                                   |
-| `bun run typecheck`          | `tsc --noEmit`                                                                                                                  |
-| `bun run lint`               | `oxlint`                                                                                                                        |
-| `bun run lint:fix`           | `oxlint --fix` (safe fixes only)                                                                                                |
-| `bun run lint:fix:suggest`   | `oxlint --fix --fix-suggestions`                                                                                                |
-| `bun run lint:fix:dangerous` | `oxlint --fix --fix-suggestions --fix-dangerously`                                                                              |
-| `bun run fmt`                | `oxfmt`                                                                                                                         |
-| `bun run fmt:check`          | `oxfmt --check`                                                                                                                 |
-| `bun run test`               | `vitest run`                                                                                                                    |
-| `bun run test:watch`         | `vitest`                                                                                                                        |
-| `bun run clean`              | Full reset: trash artifacts, reinstall, convex ai-files update, convex dev --once, vite build, fmt:check, lint, typecheck, test |
+Every script works under any package manager. Replace `<pm>` with `bun`, `pnpm`, `npm`, or `yarn`.
+
+| Script                        | What it does                                                                                    |
+| ----------------------------- | ----------------------------------------------------------------------------------------------- |
+| `<pm> run setup`              | wipe, reinstall, configure Convex + Resend                                                      |
+| `<pm> run setup:local`        | same, with Docker Convex                                                                        |
+| `<pm> run setup:fresh`        | provision a new Convex deployment                                                               |
+| `<pm> run dev`                | Vite + Convex dev servers on `:3000`                                                            |
+| `<pm> run build`              | `vite build && tsc --noEmit`                                                                    |
+| `<pm> run start`              | Nitro SSR server from `.output/`                                                                |
+| `<pm> run preview`            | `vite preview`                                                                                  |
+| `<pm> run analyze`            | `ANALYZE=1 vite build` with rollup visualizer                                                   |
+| `<pm> run typecheck`          | `tsc --noEmit`                                                                                  |
+| `<pm> run lint`               | `oxlint`                                                                                        |
+| `<pm> run lint:fix`           | `oxlint --fix` (safe fixes only)                                                                |
+| `<pm> run lint:fix:suggest`   | `oxlint --fix --fix-suggestions`                                                                |
+| `<pm> run lint:fix:dangerous` | `oxlint --fix --fix-suggestions --fix-dangerously`                                              |
+| `<pm> run fmt`                | `oxfmt`                                                                                         |
+| `<pm> run fmt:check`          | `oxfmt --check`                                                                                 |
+| `<pm> run test`               | `vitest run`                                                                                    |
+| `<pm> run test:watch`         | `vitest`                                                                                        |
+| `<pm> run clean`              | Full reset: trash artifacts, reinstall, fmt, convex codegen, lint --fix, build, typecheck, test |
 
 ## Adding shadcn components
 
 ```bash
-bunx shadcn@latest add sheet dialog tabs
+npx shadcn@latest add sheet dialog tabs
 ```
 
 Components land in `src/components/ui/`. Import via the `@/` alias:
@@ -161,29 +165,56 @@ The `base-luma` style is pinned in `components.json`, so every new component pic
 
 Ships delivery events (`delivered`, `bounced`, `complained`) back to Convex. Auth works without it, you just lose visibility on mail delivery.
 
-1. Run `bun run setup` first so the Convex project exists
+1. Run `setup` first so the Convex project exists
 2. Go to [resend.com/webhooks](https://resend.com/webhooks), point at `https://<project>.convex.site/resend-webhook`
 3. Copy the signing secret
-4. `bunx convex env set RESEND_WEBHOOK_SECRET <secret>`
+4. `npx convex env set RESEND_WEBHOOK_SECRET <secret>`
 
-## Deploy
+## Deploying
+
+Two-part deploy: Convex backend + a frontend host. Nitro auto-detects the host from build env (`VERCEL`, `NETLIFY`, Cloudflare Workers) and emits the right output. Security headers ship from `routeRules` in `vite.config.ts`, same on every preset.
+
+### Convex backend
 
 ```bash
-bunx convex deploy --cmd "bun run build"
+npx convex deploy --cmd "npm run build"
 ```
 
 Set prod env vars on Convex:
 
 ```bash
-bunx convex env set SITE_URL https://your-app.vercel.app --prod
-bunx convex env set BETTER_AUTH_SECRET $(openssl rand -base64 32) --prod
-bunx convex env set RESEND_API_KEY re_your_production_key --prod
-bunx convex env set EMAIL_FROM "Your App <noreply@yourdomain.com>" --prod
-bunx convex env set APP_NAME "Your App" --prod
-bunx convex env set RESEND_TEST_MODE false --prod
+npx convex env set SITE_URL https://your-app.vercel.app --prod
+npx convex env set BETTER_AUTH_SECRET $(openssl rand -base64 32) --prod
+npx convex env set RESEND_API_KEY re_your_production_key --prod
+npx convex env set EMAIL_FROM "Your App <noreply@yourdomain.com>" --prod
+npx convex env set APP_NAME "Your App" --prod
+npx convex env set RESEND_TEST_MODE false --prod
 ```
 
-Then set `CONVEX_DEPLOYMENT=prod:your-project-name` and `SITE_URL` on your host. Nitro auto-detects the preset so Vercel, Cloudflare Pages, Netlify, Node, and Bun all work without extra config.
+Then set `CONVEX_DEPLOYMENT=prod:your-project-name` and `SITE_URL` on your frontend host.
+
+### Vercel
+
+Push the repo, import in the [Vercel dashboard](https://vercel.com/new). Set `BUN_VERSION=1.3.13` as a project env var so Vercel uses a bun version that resolves TanStack's nested zod correctly (the preinstalled version lags). The shipped `vercel.json` is minimal (just the build command for documentation); Vercel auto-detects bun from `bun.lock` and Nitro emits to `.vercel/output/`.
+
+### Netlify
+
+Push the repo, connect in the [Netlify dashboard](https://app.netlify.com/start). The shipped `netlify.toml` declares build command (`npm run build`), publish dir (`dist`), and the SSR functions dir (`.netlify/functions-internal`). Nothing to configure.
+
+### Cloudflare Workers
+
+Cloudflare recommends Workers + Static Assets for new projects. Pages reached feature parity in 2026 and was effectively superseded. Push the repo, then in the [Cloudflare dashboard](https://dash.cloudflare.com) → Workers & Pages → Create → Workers, connect the repo. Set:
+
+- Build command: `npm run build`
+- Deploy command: `npx wrangler deploy` (or `bunx wrangler deploy`)
+
+Nitro auto-detects the build env and uses its `cloudflare-module` preset, emitting `.output/server/index.mjs` (the Worker) plus `.output/public/` (static assets bound to `ASSETS`). The shipped `wrangler.toml` declares `compatibility_date` and `nodejs_compat`. Nitro auto-generates the rest of the deploy config (`.output/server/wrangler.json`) at build time.
+
+Don't create a Pages project for new deployments. Pages reserves the `ASSETS` binding name that Nitro's modern preset uses, which causes deploy to fail.
+
+### Other platforms
+
+Anywhere Nitro runs: Node, Bun, AWS Lambda, Deno Deploy, etc. Set `NITRO_PRESET` in your build env (e.g. `NITRO_PRESET=node-server`) and run `npm run build`. Output lands in `.output/`.
 
 ## Project structure
 
@@ -229,9 +260,10 @@ src/
 └── vite-env.d.ts                  # typed import.meta.env
 
 .vscode/                           # workspace settings (oxc default formatter, tailwind classRegex) + extension recommendations
-patches/                           # bun patch overlays (`@hugeicons/react`, `better-auth`)
+patches/                           # patches managed via `patch-package` semantics (`@hugeicons/react`, `better-auth`)
 scripts/
-├── clean.ts                       # `bun run clean`: full reset + verify chain
+├── _run.mjs                       # runtime-agnostic launcher (bun -> tsx -> npx tsx)
+├── clean.ts                       # `<pm> run clean`: full reset, fix + verify chain
 └── setup.ts                       # one-command onboarding
 vite.config.ts                     # Vite, Nitro, security headers
 ```

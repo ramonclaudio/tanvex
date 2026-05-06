@@ -201,11 +201,10 @@ export async function safeGetAuthenticatedUser(
   const user = await getUserByAuthId(ctx, authUser._id)
   if (!user) return undefined
 
-  // Resolve avatar: user upload takes precedence over Better Auth image
+  // Resolve avatar: user upload takes precedence over Better Auth image.
+  // Narrow `user.avatar` directly so getUrl sees the non-undefined branch.
   const hasUploadedAvatar = !!user.avatar
-  const avatarUrl = hasUploadedAvatar
-    ? await ctx.storage.getUrl(user.avatar!)
-    : (authUser.image ?? null)
+  const avatarUrl = user.avatar ? await ctx.storage.getUrl(user.avatar) : (authUser.image ?? null)
 
   return {
     ...user,

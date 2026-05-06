@@ -1,4 +1,3 @@
-#!/usr/bin/env bun
 /**
  * tanvex bootstrapper.
  *
@@ -8,16 +7,13 @@
  *
  * Use for fresh installs or to reset a broken project. Convex deployment
  * env vars survive a re-run (not rotated), but for one-off changes use
- * `bunx convex env set NAME VALUE` directly instead of re-running setup.
+ * `<dlx> convex env set NAME VALUE` directly instead of re-running setup.
+ *
+ * Runtime-agnostic: works under bun, node, tsx. The `_run.mjs` launcher
+ * picks the runtime; this script uses only node: built-ins plus the web
+ * crypto and TextDecoder globals (universal in Node 18+ and Bun).
  *
  * All progress output goes to stderr so the script composes cleanly in pipes.
- *
- * Usage:
- *   bun run setup               cloud Convex, interactive
- *   bun run setup --local       self-hosted / local Convex backend
- *   bun run setup --fresh       provision a NEW Convex deployment (nuclear)
- *   bun run setup --version     print Bun version and exit
- *   bun run setup --help        print usage and exit
  *
  * Exit codes:
  *   0   success
@@ -27,72 +23,87 @@
  *   143 SIGTERM
  */
 
-// This file requires Bun. Running it with `node scripts/setup.ts` will fail
-// at the `import { $ } from 'bun'` line below with ERR_MODULE_NOT_FOUND —
-// which is already a clear error, so there's no synchronous guard to add.
-
-import { rm } from "node:fs/promises"
+import { spawn as nodeSpawn } from "node:child_process"
+import { access, readFile, rm, writeFile } from "node:fs/promises"
+import { dirname, resolve as resolvePath } from "node:path"
+import { createInterface } from "node:readline/promises"
+import { setTimeout as sleep } from "node:timers/promises"
+import { fileURLToPath } from "node:url"
 import { parseArgs } from "node:util"
 
-import { $ } from "bun"
+// ─── Paths ───────────────────────────────────────────────────────────────────
+// Anchor to the repo root so the script works when invoked from any cwd.
 
-// ─── Shell defaults ──────────────────────────────────────────────────────────
-// - Explicit throws(true) for clarity; matches the default but documents intent.
-// - $.cwd anchors all child processes to the repo root so the script works
-//   when invoked from any directory (including symlinked bin paths).
-$.throws(true)
-$.cwd(new URL("..", import.meta.url).pathname)
+const REPO_ROOT = resolvePath(dirname(fileURLToPath(import.meta.url)), "..")
+process.chdir(REPO_ROOT)
 
 // ─── Output: everything goes to stderr ───────────────────────────────────────
-// A setup script has no primary output — all of this is progress. Writing to
-// stderr lets users do `bun run setup >/dev/null` to hide the interactive
-// command's stdout while still seeing our progress, or `2>/dev/null` for
-// total silence.
-//
-// Bun.color() auto-honors NO_COLOR / FORCE_COLOR and returns "" on no-color
-// terminals, so the script stays readable in CI logs and pipes.
+// A setup script has no primary output, all of this is progress. Writing to
+// stderr lets users hide it with `2>/dev/null` while still seeing the
+// interactive command's stdout.
 
-const RESET = "\x1b[0m"
-const BOLD = "\x1b[1m"
-const DIM = "\x1b[2m"
-const GREEN = Bun.color("#22c55e", "ansi") ?? ""
-const RED = Bun.color("#ef4444", "ansi") ?? ""
-const YELLOW = Bun.color("#f59e0b", "ansi") ?? ""
-const VIOLET = Bun.color("#a78bfa", "ansi") ?? ""
+const NO_COLOR = !!process.env.NO_COLOR
+const FORCE_COLOR = !!process.env.FORCE_COLOR
+const useColor = FORCE_COLOR || (!NO_COLOR && (process.stderr.isTTY ?? false))
 
-const write = (s: string) => process.stderr.write(s)
-const line = (s = "") => process.stderr.write(s + "\n")
+function ansiHex(hex: string): string {
+  if (!useColor) return ""
+  const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex)
+  if (!m) return ""
+  return `\x1b[38;2;${parseInt(m[1], 16)};${parseInt(m[2], 16)};${parseInt(m[3], 16)}m`
+}
 
-const ok = (msg: string) => line(`  ${GREEN}ok${RESET}   ${msg}`)
-const nop = (msg: string) => line(`  ${DIM}--   ${msg}${RESET}`)
-const yep = (msg: string) => line(`  ${YELLOW}!!${RESET}   ${msg}`)
-const bad = (msg: string) => line(`  ${RED}xx${RESET}   ${RED}${msg}${RESET}`)
-const note = (msg: string) => line(`       ${DIM}${msg}${RESET}`)
+const RESET = useColor ? "\x1b[0m" : ""
+const BOLD = useColor ? "\x1b[1m" : ""
+const DIM = useColor ? "\x1b[2m" : ""
+const GREEN = ansiHex("#22c55e")
+const RED = ansiHex("#ef4444")
+const YELLOW = ansiHex("#f59e0b")
+const VIOLET = ansiHex("#a78bfa")
+
+const write = (s: string): void => {
+  process.stderr.write(s)
+}
+const line = (s = ""): void => {
+  process.stderr.write(s + "\n")
+}
+
+const ok = (msg: string): void => line(`  ${GREEN}ok${RESET}   ${msg}`)
+const nop = (msg: string): void => line(`  ${DIM}--   ${msg}${RESET}`)
+const yep = (msg: string): void => line(`  ${YELLOW}!!${RESET}   ${msg}`)
+const bad = (msg: string): void => line(`  ${RED}xx${RESET}   ${RED}${msg}${RESET}`)
+const note = (msg: string): void => line(`       ${DIM}${msg}${RESET}`)
 
 function section(title: string): void {
   const w = process.stderr.columns ?? process.stdout.columns ?? 80
-  const fill = "─".repeat(Math.max(0, w - Bun.stringWidth(title) - 3))
+  // ASCII-only title, code units are equivalent to display width
+  const fill = "─".repeat(Math.max(0, w - title.length - 3))
   line(`\n${BOLD}${VIOLET}${title}${RESET} ${DIM}${fill}${RESET}`)
 }
 
 // ─── Interactive prompt ──────────────────────────────────────────────────────
-// The browser-standard `prompt()` global in Bun writes to stdout — we need the
-// question on stderr to preserve the "all progress to stderr" invariant. Bun's
-// `console` is an AsyncIterable of stdin lines, so we drive the read loop
-// ourselves and write the question through `process.stderr.write`.
+// Question goes to stderr (preserves the "all progress to stderr" rule). We
+// build a fresh readline interface per call so closing it cleanly releases
+// stdin for the next prompt or for inherited child processes.
 
 async function ask(question: string): Promise<string> {
   write(question)
-  for await (const raw of console) return raw.trim()
-  return ""
+  const rl = createInterface({
+    input: process.stdin,
+    output: process.stderr,
+    terminal: false,
+  })
+  try {
+    const answer = await new Promise<string>((resolve) => {
+      rl.once("line", (raw: string) => resolve(raw))
+      rl.once("close", () => resolve(""))
+    })
+    return answer.trim()
+  } finally {
+    rl.close()
+  }
 }
 
-/**
- * Y/n confirmation. Case-insensitive, falls back to `defaultYes` on empty
- * input (and also on non-TTY, since `ask()` returns '' without blocking).
- * Uses the same stderr writer as `ask()` so output stream discipline is
- * preserved.
- */
 async function askYesNo(question: string, defaultYes: boolean): Promise<boolean> {
   const hint = defaultYes ? "Y/n" : "y/N"
   const raw = (await ask(`  ${question} ${DIM}[${hint}] >${RESET} `)).toLowerCase()
@@ -100,18 +111,118 @@ async function askYesNo(question: string, defaultYes: boolean): Promise<boolean>
   return raw === "y" || raw === "yes"
 }
 
+// ─── Subprocess helpers ──────────────────────────────────────────────────────
+
+function spawnInherit(argv: ReadonlyArray<string>): Promise<number> {
+  return new Promise((resolve) => {
+    const proc = nodeSpawn(argv[0], argv.slice(1), { stdio: "inherit", cwd: REPO_ROOT })
+    let settled = false
+    const finish = (code: number) => {
+      if (settled) return
+      settled = true
+      resolve(code)
+    }
+    proc.once("exit", (code, signal) => finish(code ?? (signal ? 1 : 0)))
+    proc.once("error", () => finish(1))
+  })
+}
+
+type CaptureOpts = { timeout?: number }
+
+function spawnCapture(
+  argv: ReadonlyArray<string>,
+  opts: CaptureOpts = {},
+): Promise<{ code: number; stdout: string; stderr: string }> {
+  return new Promise((resolve) => {
+    const proc = nodeSpawn(argv[0], argv.slice(1), {
+      stdio: ["ignore", "pipe", "pipe"],
+      cwd: REPO_ROOT,
+    })
+    let stdout = ""
+    let stderr = ""
+    proc.stdout?.on("data", (c) => (stdout += String(c)))
+    proc.stderr?.on("data", (c) => (stderr += String(c)))
+    let timer: ReturnType<typeof setTimeout> | undefined
+    if (opts.timeout) {
+      timer = setTimeout(() => proc.kill(), opts.timeout)
+    }
+    let settled = false
+    const finish = (code: number) => {
+      if (settled) return
+      settled = true
+      if (timer) clearTimeout(timer)
+      // oxlint-disable-next-line promise/no-multiple-resolved
+      resolve({ code, stdout, stderr })
+    }
+    proc.once("exit", (code, signal) => finish(code ?? (signal ? 1 : 0)))
+    proc.once("error", () => finish(1))
+  })
+}
+
+// ─── Runtime + package manager detection ─────────────────────────────────────
+
+type PackageManager = "bun" | "pnpm" | "yarn" | "npm"
+
+async function fileExists(p: string): Promise<boolean> {
+  try {
+    await access(p)
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function detectPackageManager(): Promise<PackageManager> {
+  // npm_config_user_agent is set by every modern PM and starts with the PM
+  // name (e.g. "bun/1.3.13 npm/? node/v24.12.0"). startsWith is robust against
+  // path-substring false positives, e.g. pnpm's binary path containing "npm".
+  const ua = (process.env.npm_config_user_agent ?? "").toLowerCase()
+  if (ua.startsWith("bun")) return "bun"
+  if (ua.startsWith("pnpm")) return "pnpm"
+  if (ua.startsWith("yarn")) return "yarn"
+  if (ua.startsWith("npm")) return "npm"
+  if (await fileExists("bun.lock")) return "bun"
+  if (await fileExists("bun.lockb")) return "bun"
+  if (await fileExists("pnpm-lock.yaml")) return "pnpm"
+  if (await fileExists("yarn.lock")) return "yarn"
+  return "npm"
+}
+
+function installArgv(pm: PackageManager): Array<string> {
+  return [pm, "install"]
+}
+
+const RUN_CMD: Record<PackageManager, string> = {
+  bun: "bun run",
+  pnpm: "pnpm",
+  yarn: "yarn",
+  npm: "npm run",
+}
+
+const DLX_CMD: Record<PackageManager, string> = {
+  bun: "bunx",
+  pnpm: "pnpm dlx",
+  yarn: "yarn dlx",
+  npm: "npx",
+}
+
+/** Runtime-aware dlx for our subprocess invocations. */
+function dlx(): string {
+  return process.versions.bun ? "bunx" : "npx"
+}
+
 // ─── Args ────────────────────────────────────────────────────────────────────
 
 const HELP = `${BOLD}tanvex setup${RESET}
 
 ${BOLD}Usage:${RESET}
-  ${DIM}bun run setup${RESET}                cloud Convex (interactive)
-  ${DIM}bun run setup --local${RESET}        self-hosted / local Convex backend
-  ${DIM}bun run setup --fresh${RESET}        provision a NEW Convex deployment
-                               (wipes ${DIM}.env.local${RESET}; use after schema
-                               refactors that reject old rows)
-  ${DIM}bun run setup --version${RESET}      print Bun version and exit
-  ${DIM}bun run setup --help${RESET}         this message
+  ${DIM}<pm> run setup${RESET}              cloud Convex (interactive)
+  ${DIM}<pm> run setup --local${RESET}      self-hosted / local Convex backend
+  ${DIM}<pm> run setup --fresh${RESET}      provision a NEW Convex deployment
+                              (wipes ${DIM}.env.local${RESET}; use after schema
+                              refactors that reject old rows)
+  ${DIM}<pm> run setup --version${RESET}    print runtime version and exit
+  ${DIM}<pm> run setup --help${RESET}       this message
 
 Wipes node_modules, lockfile, build artifacts, and generated files, then
 reinstalls deps and walks through Convex + Better Auth + Resend setup.
@@ -121,24 +232,18 @@ By default, ${DIM}CONVEX_DEPLOYMENT${RESET} in ${DIM}.env.local${RESET} survives
 reconnects to the same backend. Pass ${DIM}--fresh${RESET} to create a new Convex
 project instead. Stale data, deployment env vars, and webhook configs on
 the old deployment are all left behind. For one-off env var changes on a
-working project, use ${DIM}bunx convex env set NAME VALUE${RESET} directly instead of
+working project, use ${DIM}<dlx> convex env set NAME VALUE${RESET} directly instead of
 re-running setup.
 
 ${BOLD}Note:${RESET} Resend is required by this codebase. Sign-up, sign-in,
 verification, password reset, and email change all need email delivery.
 `
 
-type Args = {
-  local?: boolean
-  fresh?: boolean
-  version?: boolean
-  help?: boolean
-}
-
-let args: Args
+let argLocal = false
+let argFresh = false
 try {
-  args = parseArgs({
-    args: Bun.argv.slice(2),
+  const { values } = parseArgs({
+    args: process.argv.slice(2),
     options: {
       local: { type: "boolean", default: false },
       fresh: { type: "boolean", default: false },
@@ -146,46 +251,38 @@ try {
       help: { type: "boolean", short: "h", default: false },
     },
     strict: true,
-  }).values as Args
+  })
+  if (values.help) {
+    line(HELP)
+    process.exit(0)
+  }
+  if (values.version) {
+    const runtime = process.versions.bun
+      ? `bun ${process.versions.bun}`
+      : `node ${process.versions.node}`
+    line(runtime)
+    process.exit(0)
+  }
+  argLocal = values.local ?? false
+  argFresh = values.fresh ?? false
 } catch (err) {
   bad(err instanceof Error ? err.message : String(err))
-  note("try: bun run setup --help")
+  note("try: <pm> run setup --help")
   process.exit(2)
 }
 
-if (args.help) {
-  line(HELP)
-  process.exit(0)
-}
-
-if (args.version) {
-  line(`bun ${Bun.version} (${Bun.revision.slice(0, 7)})`)
-  process.exit(0)
-}
-
 // ─── Signals ─────────────────────────────────────────────────────────────────
-// Handle both SIGINT (Ctrl+C) and SIGTERM (process manager shutdown) so the
-// script never leaves a half-ANSI-colored terminal or confusing stack trace.
-// Also ensures any running `convex dev` child is killed before we exit — the
-// main-loop `finally` normally handles this, but a signal can bypass it.
+// Handle SIGINT and SIGTERM so the script never leaves a half-ANSI-colored
+// terminal or a leaked `convex dev` child.
 
-/**
- * Handle to a running `convex dev` subprocess. The persistent dev session
- * must be `stop()`ed before the setup script exits so we don't leak a dev
- * server into the user's environment.
- */
 type ConvexDevHandle = {
   stop: () => Promise<void>
 }
 
-// Set by stepConvexDev once the background `convex dev` process is running.
-// Held at module scope so the signal handlers can reach it.
 let activeConvexDev: ConvexDevHandle | undefined
 
 const shutdown = (code: number, label: string, hint: string): void => {
   line(`\n${YELLOW}${label}${RESET} ${DIM}${hint}${RESET}`)
-  // Don't await — signal handlers should be synchronous. If the dev process
-  // is still running, fire a kill and let it die on its own.
   activeConvexDev?.stop().catch(() => {})
   process.exit(code)
 }
@@ -199,15 +296,14 @@ const ENV_FILE = ".env.local"
 
 /**
  * Parse `.env.local` into a Map. Handles inline comments (` # ...` after the
- * value) and surrounding whitespace — critical because Convex writes lines
- * like `CONVEX_DEPLOYMENT=dev:foo # team: bar, project: baz` and a naive
- * split-on-`=` parser would pollute process.env with the comment tail.
+ * value) and surrounding whitespace, critical because Convex writes lines
+ * like `CONVEX_DEPLOYMENT=dev:foo # team: bar, project: baz`.
  */
 async function readEnvFile(): Promise<Map<string, string>> {
-  const file = Bun.file(ENV_FILE)
   const out = new Map<string, string>()
-  if (!(await file.exists())) return out
-  for (const raw of (await file.text()).split("\n")) {
+  if (!(await fileExists(ENV_FILE))) return out
+  const text = await readFile(ENV_FILE, "utf8")
+  for (const raw of text.split("\n")) {
     const trimmed = raw.trim()
     if (!trimmed || trimmed.startsWith("#")) continue
     const eq = trimmed.indexOf("=")
@@ -231,35 +327,27 @@ async function readEnvFile(): Promise<Map<string, string>> {
 /**
  * Append `KEY=VALUE` to `.env.local` if (and only if) the key is not already
  * present. Preserves the original file contents, including comments and blank
- * lines — unlike a rewrite-from-Map approach, which would silently strip the
- * `# Deployment used by \`npx convex dev\`` header the Convex CLI writes.
- *
- * Safe to call repeatedly: the regex check makes this a no-op if the key is
- * already set.
+ * lines, unlike a rewrite-from-Map approach.
  */
 async function ensureEnvLocalLine(key: string, value: string): Promise<void> {
-  const file = Bun.file(ENV_FILE)
-  const current = (await file.exists()) ? await file.text() : ""
+  const exists = await fileExists(ENV_FILE)
+  const current = exists ? await readFile(ENV_FILE, "utf8") : ""
   // Match `KEY=` only at the start of a line so commented-out `# KEY=...` is ignored.
   if (new RegExp(`^${key}=`, "m").test(current)) return
   const needsNewline = current !== "" && !current.endsWith("\n")
-  await Bun.write(ENV_FILE, `${current}${needsNewline ? "\n" : ""}${key}=${value}\n`)
+  await writeFile(ENV_FILE, `${current}${needsNewline ? "\n" : ""}${key}=${value}\n`)
 }
 
 // ─── Convex helpers ──────────────────────────────────────────────────────────
 
 async function convexEnvMap(): Promise<Map<string, string>> {
-  // Pin to the currently-active deployment via `--deployment` so we don't
-  // accidentally read from a stale one inherited via env-var.
   const deployment = deploymentNameFromEnvValue(process.env.CONVEX_DEPLOYMENT)
-  const argv = ["bunx", "convex", "env", "list"]
+  const argv = [dlx(), "convex", "env", "list"]
   if (deployment) argv.push("--deployment", deployment)
-  const proc = Bun.spawn(argv, { stdin: "ignore", stdout: "pipe", stderr: "pipe" })
+  const { code, stdout } = await spawnCapture(argv)
   const out = new Map<string, string>()
-  const code = await proc.exited
   if (code !== 0) return out
-  const text = await new Response(proc.stdout).text()
-  for (const raw of text.split("\n")) {
+  for (const raw of stdout.split("\n")) {
     const trimmed = raw.trim()
     if (!trimmed) continue
     const eq = trimmed.indexOf("=")
@@ -271,8 +359,7 @@ async function convexEnvMap(): Promise<Map<string, string>> {
 /**
  * Strip the `dev:` / `prod:` prefix from a CONVEX_DEPLOYMENT value to get the
  * bare deployment name. The env-var form requires the prefix; the CLI's
- * `--deployment` flag rejects it and expects just `name`. Yes, these two are
- * inconsistent — verified empirically.
+ * `--deployment` flag rejects it and expects just `name`.
  */
 function deploymentNameFromEnvValue(value: string | undefined): string | undefined {
   if (!value) return undefined
@@ -281,44 +368,23 @@ function deploymentNameFromEnvValue(value: string | undefined): string | undefin
 }
 
 /**
- * Run `bunx convex env set NAME VALUE` through Bun.spawn with the explicit
- * `--deployment <name>` flag. We pass the deployment explicitly (instead of
- * relying on CONVEX_DEPLOYMENT env-var inheritance) so child processes can
- * never target a stale deployment from the parent's startup-time env.
- *
- * stdin is closed so the CLI can't hang on an interactive retry prompt;
- * stderr is captured for error reporting; a hard timeout kills the process
- * if it gets stuck on flaky network state.
+ * Run `<dlx> convex env set NAME VALUE` with explicit `--deployment <name>`.
+ * stdin is closed so the CLI can't hang on an interactive retry; stderr is
+ * captured for error reporting; a hard timeout kills the process if it gets
+ * stuck on flaky network state.
  */
 async function runConvexEnvSetOnce(
   name: string,
   value: string,
 ): Promise<{ exitCode: number; stderr: string }> {
   const deployment = deploymentNameFromEnvValue(process.env.CONVEX_DEPLOYMENT)
-  const argv = ["bunx", "convex", "env", "set"]
+  const argv = [dlx(), "convex", "env", "set"]
   if (deployment) argv.push("--deployment", deployment)
   argv.push(name, value)
-  const proc = Bun.spawn(argv, {
-    stdin: "ignore",
-    stdout: "pipe",
-    stderr: "pipe",
-  })
-  const timer = setTimeout(() => proc.kill(), 15_000)
-  try {
-    const exitCode = await proc.exited
-    const stderr = await new Response(proc.stderr).text()
-    return { exitCode, stderr }
-  } finally {
-    clearTimeout(timer)
-  }
+  const { code, stderr } = await spawnCapture(argv, { timeout: 15_000 })
+  return { exitCode: code, stderr }
 }
 
-/**
- * Set a Convex env var. Single attempt — the persistent `convex dev` process
- * held open by `stepConvexDev` keeps the deployment session alive, so writes
- * should succeed immediately. On failure, throw with the stderr tail so the
- * user sees the real CLI error.
- */
 async function convexEnvSet(name: string, value: string): Promise<void> {
   const res = await runConvexEnvSetOnce(name, value)
   if (res.exitCode === 0) return
@@ -335,16 +401,13 @@ function base64Secret(): string {
 }
 
 // ─── Defaults derived from package.json ──────────────────────────────────────
-// Read lazily inside the step that needs them so `--help` and `--version`
-// don't pay the I/O cost.
 
 async function deriveAppName(): Promise<string> {
   try {
-    const pkg: unknown = await Bun.file("package.json").json()
+    const pkg: unknown = JSON.parse(await readFile("package.json", "utf8"))
     if (typeof pkg !== "object" || pkg === null || !("name" in pkg)) return "App"
     const { name } = pkg
     if (typeof name !== "string" || !name) return "App"
-    // Strip "@scope/" prefix if present, then title-case hyphens/underscores.
     const clean = name.replace(/^@[^/]+\//, "")
     const parts = clean.split(/[-_]/).filter(Boolean)
     if (parts.length === 0) return "App"
@@ -357,25 +420,23 @@ async function deriveAppName(): Promise<string> {
 // ─── Steps ───────────────────────────────────────────────────────────────────
 
 /**
- * Wipe local state and reinstall dependencies. The wipe list mirrors what
- * was previously the standalone `bun run cleanup` script: build artifacts,
- * generated files, the lockfile, and node_modules. `.env.local` is NOT
- * touched by default, so `CONVEX_DEPLOYMENT` survives and the next
- * `convex dev --once` reconnects to the same backend.
+ * Wipe local state and reinstall dependencies. `.env.local` is NOT touched
+ * by default, so `CONVEX_DEPLOYMENT` survives and the next `convex dev`
+ * reconnects to the same backend.
  *
- * When `fresh` is true, `.env.local` is also wiped so that the subsequent
- * `convex dev --once --configure new` writes a clean set of Convex values
- * instead of inheriting the old deployment's `VITE_CONVEX_SITE_URL`.
- *
- * Setup is the entry point for fresh installs and full resets. For one-off
- * env var changes on a working project, use `bunx convex env set` directly
- * instead of re-running setup.
+ * When `fresh` is true, `.env.local` is also wiped so the subsequent
+ * `convex dev --configure new` writes a clean set of Convex values instead
+ * of inheriting the old deployment's `VITE_CONVEX_SITE_URL`.
  */
-async function stepCleanup(fresh: boolean): Promise<void> {
+async function stepCleanup(fresh: boolean, pm: PackageManager): Promise<void> {
   section("Clean install")
   const targets = [
     "node_modules",
     "bun.lock",
+    "bun.lockb",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "package-lock.json",
     "dist",
     ".output",
     ".nitro",
@@ -387,52 +448,37 @@ async function stepCleanup(fresh: boolean): Promise<void> {
     "tsconfig.tsbuildinfo",
     ...(fresh ? [ENV_FILE] : []),
   ]
-  // `force: true` swallows ENOENT, so a fresh clone (where most of these
-  // don't exist yet) is a no-op rather than an error.
   await Promise.all(targets.map((t) => rm(t, { recursive: true, force: true })))
   ok(
     fresh
-      ? `wiped node_modules, lockfile, build artifacts, and ${ENV_FILE}`
-      : "wiped node_modules, lockfile, and build artifacts",
+      ? `wiped node_modules, lockfiles, build artifacts, and ${ENV_FILE}`
+      : "wiped node_modules, lockfiles, and build artifacts",
   )
 
-  // Stream `bun install` so the user sees progress on what is typically
-  // the slowest step. Throws on non-zero exit, caught by main's try/catch.
-  const proc = Bun.spawn(["bun", "install"], {
-    stdio: ["inherit", "inherit", "inherit"],
-  })
-  const code = await proc.exited
-  if (code !== 0) throw new Error(`bun install exited with code ${code}`)
-  ok("bun install")
+  const argv = installArgv(pm)
+  const code = await spawnInherit(argv)
+  if (code !== 0) throw new Error(`${argv.join(" ")} exited with code ${code}`)
+  ok(argv.join(" "))
 }
 
 /**
  * Spawn `convex dev` (without --once) and wait for the initial push to
  * finish. The dev process stays alive while we run `convex env set` calls,
  * which is what the Convex CLI expects: `--once` exits before the backend
- * fully registers the deployment for write-endpoint auth, so subsequent
- * env writes 403 with "You don't have access to the selected project".
- * Keeping dev alive holds an authenticated session and makes env writes
- * work immediately.
- *
- * Returns a handle the caller must `stop()` before the script exits.
+ * fully registers the deployment for write-endpoint auth.
  */
 async function stepConvexDev(useLocal: boolean, fresh: boolean): Promise<ConvexDevHandle> {
   section("Convex deployment")
-  const cmd = ["bunx", "convex", "dev"]
+  const cmd = [dlx(), "convex", "dev"]
   if (useLocal) cmd.push("--local")
   if (fresh) cmd.push("--configure", "new")
-  // Disable log tailing so the dev process doesn't spam stdout forever
-  // while we're running env ops — we only care about the initial push.
   cmd.push("--tail-logs", "disable")
 
-  // Pipe stdio so we can watch for the "Convex functions ready!" marker
-  // *and* stream output to stderr so the user sees configure prompts and
-  // progress in real time.
-  const proc = Bun.spawn(cmd, {
-    stdin: "inherit", // configure prompts need real stdin
-    stdout: "pipe",
-    stderr: "pipe",
+  // stdin inherited so configure prompts work; stdout/stderr piped so we can
+  // watch for the "ready" marker while still streaming output to the user.
+  const proc = nodeSpawn(cmd[0], cmd.slice(1), {
+    stdio: ["inherit", "pipe", "pipe"],
+    cwd: REPO_ROOT,
   })
 
   const readyMarker = /Convex functions ready!/
@@ -441,30 +487,27 @@ async function stepConvexDev(useLocal: boolean, fresh: boolean): Promise<ConvexD
     signalReady = resolve
   })
 
-  const forward = async (stream: ReadableStream<Uint8Array>): Promise<void> => {
-    const reader = stream.getReader()
-    const decoder = new TextDecoder()
-    for (;;) {
-      const { done, value } = await reader.read()
-      if (done) return
-      const text = decoder.decode(value, { stream: true })
+  const forward = (stream: typeof proc.stdout): void => {
+    if (!stream) return
+    stream.on("data", (chunk) => {
+      const text = String(chunk)
       process.stderr.write(text)
       if (readyMarker.test(text)) signalReady?.()
-    }
+    })
   }
+  forward(proc.stdout)
+  forward(proc.stderr)
 
-  // Forward both streams in parallel but don't await them here — they only
-  // resolve when the dev process exits. We just need to watch stdout for the
-  // ready marker.
-  void forward(proc.stdout).catch(() => {})
-  void forward(proc.stderr).catch(() => {})
-
-  // Track exit so the returned `stop` closure can short-circuit when the
-  // process is already gone.
   let exited = false
-  const exitPromise = proc.exited.then((code) => {
-    exited = true
-    return code
+  const exitPromise = new Promise<number>((resolve) => {
+    proc.once("exit", (code, signal) => {
+      exited = true
+      resolve(code ?? (signal ? 1 : 0))
+    })
+    proc.once("error", () => {
+      exited = true
+      resolve(1)
+    })
   })
 
   // Race readiness against process exit and a 180s ceiling. On first-run with
@@ -493,12 +536,11 @@ async function stepConvexDev(useLocal: boolean, fresh: boolean): Promise<ConvexD
   }
 
   // Give Convex a moment to fully settle the just-pushed schema before we
-  // start hammering the env write endpoint. Short enough to be invisible,
-  // long enough to dodge obvious propagation races.
-  await Bun.sleep(500)
+  // start hammering the env write endpoint.
+  await sleep(500)
 
-  // Refresh process.env from the (now definitely up-to-date) .env.local so
-  // child processes spawned by convexEnvSet inherit the NEW deployment.
+  // Refresh process.env from the (now up-to-date) .env.local so child processes
+  // inherit the NEW deployment.
   const freshEnv = await readEnvFile()
   for (const key of ["CONVEX_DEPLOYMENT", "VITE_CONVEX_URL", "VITE_CONVEX_SITE_URL"]) {
     const value = freshEnv.get(key)
@@ -511,11 +553,7 @@ async function stepConvexDev(useLocal: boolean, fresh: boolean): Promise<ConvexD
     stop: async () => {
       if (exited) return
       proc.kill("SIGTERM")
-      // Give it a second to clean up, then force-kill.
-      const raced = await Promise.race([
-        exitPromise,
-        Bun.sleep(2_000).then(() => "timeout" as const),
-      ])
+      const raced = await Promise.race([exitPromise, sleep(2_000).then(() => "timeout" as const)])
       if (raced === "timeout") proc.kill("SIGKILL")
       await exitPromise
     },
@@ -541,19 +579,11 @@ async function stepLocalEnv(): Promise<void> {
 
 async function stepAuthEnv(fresh: boolean): Promise<void> {
   section("Better Auth")
-  // On --fresh we just provisioned a brand-new deployment, so any "already set"
-  // reading from `convex env list` is either stale or a transient artifact of
-  // component install. Bypass the skip and always (re)set the values, so a
-  // successful setup run guarantees these exist on the Convex backend.
   const env = fresh ? new Map<string, string>() : await convexEnvMap()
 
   if (env.has("SITE_URL")) {
     nop("SITE_URL already set")
   } else {
-    // SITE_URL is the origin your frontend serves from. Used for auth redirects
-    // and cookie scoping. Default fits `bun run dev`; user can paste their own
-    // for non-default ports or remote dev. Non-TTY runs fall back silently so
-    // CI doesn't hang.
     const defaultUrl = "http://localhost:3000"
     const siteUrl = process.stdin.isTTY
       ? (await ask(`  SITE_URL ${DIM}(${defaultUrl}) >${RESET} `)) || defaultUrl
@@ -565,10 +595,6 @@ async function stepAuthEnv(fresh: boolean): Promise<void> {
   if (env.has("BETTER_AUTH_SECRET")) {
     nop("BETTER_AUTH_SECRET already set (rotating would invalidate sessions)")
   } else {
-    // Default is a 32-byte cryptographically random value, base64-encoded —
-    // the web-crypto equivalent of `openssl rand -base64 32`. Pasting a custom
-    // value lets the user migrate an existing secret from another deployment
-    // without rotating sessions.
     const pasted = process.stdin.isTTY
       ? await ask(`  BETTER_AUTH_SECRET ${DIM}(Enter to auto-generate) >${RESET} `)
       : ""
@@ -578,27 +604,16 @@ async function stepAuthEnv(fresh: boolean): Promise<void> {
   }
 }
 
-/**
- * Warning shown whenever the user ends up without RESEND_API_KEY set —
- * either via a non-TTY environment or an explicit "skip anyway"
- * confirmation in the prompt loop. The codebase requires Resend for
- * sign-up, sign-in (email + OTP), password reset, and change-email.
- */
 function warnResendUnconfigured(): void {
-  bad("RESEND_API_KEY is unset — auth flows will fail at runtime")
+  bad("RESEND_API_KEY is unset, auth flows will fail at runtime")
   note("sign-up, sign-in, password reset, and change-email all send OTPs")
-  note("set later with: bunx convex env set RESEND_API_KEY re_...")
+  note(`set later with: ${dlx()} convex env set RESEND_API_KEY re_...`)
 }
 
 async function stepResend(fresh: boolean): Promise<void> {
-  section("Resend (email delivery — required)")
+  section("Resend (email delivery, required)")
 
-  // Same reasoning as stepAuthEnv: on --fresh the deployment is empty, any
-  // "already set" reading is a transient artifact. Force full (re)prompting.
   const env = fresh ? new Map<string, string>() : await convexEnvMap()
-  // stepLocalEnv already ensured VITE_CONVEX_SITE_URL is written, so we can
-  // show the real `.convex.site` URL in the webhook prompt instead of a
-  // `<your-project>` placeholder. Falls back gracefully if the var is missing.
   const localEnv = await readEnvFile()
   const siteUrl = localEnv.get("VITE_CONVEX_SITE_URL") ?? "https://<your-project>.convex.site"
 
@@ -610,25 +625,21 @@ async function stepResend(fresh: boolean): Promise<void> {
     return
   }
 
-  // Non-TTY (CI, piped, scripted): can't prompt. Print actionable instructions
-  // and a hard warning if the API key is missing.
   if (!process.stdin.isTTY) {
     yep("stdin is not a TTY, skipping Resend prompts")
     note(`missing: ${missing.join(", ")}`)
-    note("set with: bunx convex env set NAME VALUE")
+    note(`set with: ${dlx()} convex env set NAME VALUE`)
     if (!env.has("RESEND_API_KEY")) warnResendUnconfigured()
     return
   }
 
   note("Resend delivers the OTPs for sign-up, sign-in, password reset, and email change")
   note("grab an API key at https://resend.com/api-keys (starts with re_)")
-  note("press Enter to accept defaults — except RESEND_API_KEY, which is required")
+  note("press Enter to accept defaults, except RESEND_API_KEY which is required")
   line()
 
   const defaultAppName = await deriveAppName()
 
-  // RESEND_API_KEY is required. Loop until the user pastes a value, or until
-  // they explicitly confirm they want to skip and accept broken auth.
   if (!env.has("RESEND_API_KEY")) {
     yep("API key will be echoed as you paste it")
     let setOrSkipped = false
@@ -641,20 +652,15 @@ async function stepResend(fresh: boolean): Promise<void> {
         setOrSkipped = true
         break
       }
-      // Empty input. Confirm before letting them ship a broken app.
       bad("RESEND_API_KEY is required for sign-up, sign-in, password reset, and change-email")
       if (await askYesNo("Skip anyway? Auth flows will be broken until you set it.", false)) {
         warnResendUnconfigured()
         setOrSkipped = true
         break
       }
-      // Otherwise loop and re-prompt.
     }
   }
 
-  // Track the final EMAIL_FROM value so we can make a smart RESEND_TEST_MODE
-  // decision at the end of this step. We need this regardless of whether the
-  // user overrode the default or skipped the prompt because it was already set.
   let emailFrom = env.get("EMAIL_FROM") ?? ""
   if (!env.has("EMAIL_FROM")) {
     const def = `${defaultAppName} <onboarding@resend.dev>`
@@ -670,8 +676,6 @@ async function stepResend(fresh: boolean): Promise<void> {
   }
 
   if (!env.has("RESEND_WEBHOOK_SECRET")) {
-    // Resend generates this when you create a webhook; we can't auto-generate
-    // it because Resend needs to know the value in order to sign events.
     note("Create a webhook at https://resend.com/webhooks pointing at")
     note(`  ${BOLD}${siteUrl}/resend-webhook${RESET}`)
     note("Resend shows the signing secret once when you save it.")
@@ -687,13 +691,8 @@ async function stepResend(fresh: boolean): Promise<void> {
 
   // Configure RESEND_TEST_MODE. The Convex Resend component defaults to test
   // mode true (drops any mail not going to @resend.dev), which makes a fresh
-  // setup silently broken: sign-up succeeds, no OTP arrives, no log, nothing.
-  // We want the starter to work out of the box, so we explicitly set it to
-  // false here. The onboarding@resend.dev sender delivers to real addresses
-  // without any domain verification, so this is safe when the user accepted
-  // the default EMAIL_FROM. When they pasted a custom domain, we still set it
-  // to false (because test mode would keep the project broken) but warn them
-  // loudly to verify the domain.
+  // setup silently broken. We explicitly set it to false here so the starter
+  // works out of the box.
   if (!env.has("RESEND_TEST_MODE")) {
     await convexEnvSet("RESEND_TEST_MODE", "false")
     ok("set RESEND_TEST_MODE=false (emails go to real addresses)")
@@ -705,12 +704,16 @@ async function stepResend(fresh: boolean): Promise<void> {
       note("  https://resend.com/domains")
       note("until then, either verify the domain OR temporarily switch the")
       note("sender to onboarding@resend.dev:")
-      note(`  bunx convex env set EMAIL_FROM "${defaultAppName} <onboarding@resend.dev>"`)
+      note(`  ${dlx()} convex env set EMAIL_FROM "${defaultAppName} <onboarding@resend.dev>"`)
     }
   }
 }
 
-async function printSummary(useLocal: boolean, elapsedMs: number): Promise<void> {
+async function printSummary(
+  useLocal: boolean,
+  pm: PackageManager,
+  elapsedMs: number,
+): Promise<void> {
   section("Summary")
   const [localEnv, convexEnv] = await Promise.all([readEnvFile(), convexEnvMap()])
 
@@ -724,7 +727,6 @@ async function printSummary(useLocal: boolean, elapsedMs: number): Promise<void>
     "RESEND_TEST_MODE",
     "RESEND_WEBHOOK_SECRET",
   ]
-  // Unified column width so the two blocks align vertically.
   const width = Math.max(...localKeys.map((k) => k.length), ...convexKeys.map((k) => k.length))
   const mark = (set: boolean) => (set ? `${GREEN}set${RESET}` : `${DIM}unset${RESET}`)
   const row = (key: string, set: boolean) => line(`    ${key.padEnd(width)}  ${mark(set)}`)
@@ -736,45 +738,32 @@ async function printSummary(useLocal: boolean, elapsedMs: number): Promise<void>
   for (const k of convexKeys) row(k, convexEnv.has(k))
 
   line(`\n  ${GREEN}ok${RESET}   setup complete in ${(elapsedMs / 1000).toFixed(2)}s`)
-  line(`\n  next: ${BOLD}${useLocal ? "bunx convex dev --local" : "bun run dev"}${RESET}\n`)
+  const next = useLocal ? `${DLX_CMD[pm]} convex dev --local` : `${RUN_CMD[pm]} dev`
+  line(`\n  next: ${BOLD}${next}${RESET}\n`)
 }
 
 // ─── Entry ───────────────────────────────────────────────────────────────────
-// Guarded by import.meta.main so the file can be imported for its types
-// without side effects (useful if a future test suite wants to exercise the
-// step functions in isolation).
 
-if (import.meta.main) {
-  const startedAt = performance.now()
-  try {
-    await stepCleanup(!!args.fresh)
-    activeConvexDev = await stepConvexDev(!!args.local, !!args.fresh)
-    await stepLocalEnv()
-    await stepAuthEnv(!!args.fresh)
-    await stepResend(!!args.fresh)
-    await printSummary(!!args.local, performance.now() - startedAt)
-  } catch (err) {
-    line()
-    if (err instanceof $.ShellError) {
-      bad(`shell command failed (exit ${err.exitCode})`)
-      const tail = err.stderr?.toString().trim().split("\n").pop()?.trim()
-      if (tail) note(tail)
-    } else if (err instanceof Error) {
-      bad(err.message)
-    } else {
-      bad(String(err))
+const startedAt = performance.now()
+try {
+  const pm = await detectPackageManager()
+  await stepCleanup(argFresh, pm)
+  activeConvexDev = await stepConvexDev(argLocal, argFresh)
+  await stepLocalEnv()
+  await stepAuthEnv(argFresh)
+  await stepResend(argFresh)
+  await printSummary(argLocal, pm, performance.now() - startedAt)
+} catch (err) {
+  line()
+  bad(err instanceof Error ? err.message : String(err))
+  process.exit(1)
+} finally {
+  if (activeConvexDev) {
+    try {
+      await activeConvexDev.stop()
+    } catch {
+      // best-effort, the process may already be gone
     }
-    process.exit(1)
-  } finally {
-    // Always stop the background `convex dev` process — success OR failure —
-    // so the script doesn't leave a dangling dev server behind.
-    if (activeConvexDev) {
-      try {
-        await activeConvexDev.stop()
-      } catch {
-        // Best-effort; the process may already be gone.
-      }
-      activeConvexDev = undefined
-    }
+    activeConvexDev = undefined
   }
 }

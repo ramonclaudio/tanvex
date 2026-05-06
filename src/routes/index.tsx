@@ -35,7 +35,7 @@ import { Separator } from "@/components/ui/separator"
 
 export const Route = createFileRoute("/")({ component: Home })
 
-const INSTALL_CMD = "bunx degit ramonclaudio/tanvex my-app"
+const INSTALL_CMD = "git clone https://github.com/ramonclaudio/tanvex.git my-app"
 const REPO_URL = "https://github.com/ramonclaudio/tanvex"
 
 const stack = [
@@ -172,9 +172,9 @@ function Home() {
         <p className="text-xs text-muted-foreground">
           Then{" "}
           <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.7rem]">
-            bun run setup
+            npm run setup
           </code>{" "}
-          to wire Convex, Better Auth, and Resend.
+          (or bun, pnpm, yarn) to wire Convex, Better Auth, and Resend.
         </p>
       </section>
 
@@ -226,7 +226,7 @@ function Home() {
             </code>
             . Add more with{" "}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-              bunx shadcn@latest add
+              npx shadcn@latest add
             </code>
             .
           </p>
