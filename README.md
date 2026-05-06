@@ -189,9 +189,16 @@ Ships delivery events (`delivered`, `bounced`, `complained`) back to Convex. Aut
 Two GitHub Actions workflows run on every push to `main` and every PR:
 
 - **`.github/workflows/ci.yml`** (matrix verify gate) — for each of `bun`, `pnpm`, `npm`, `yarn`: install, typecheck, lint, fmt:check, test, build. Any failure on any PM blocks merge. This is what proves the runtime-agnostic claim.
-- **`.github/workflows/deploys.yml`** (deploy verifier) — two parallel jobs (Vercel / Cloudflare Workers). Each polls its public URL until the `x-commit-sha` meta tag matches the just-pushed commit, fails after ~10 min if a platform never catches up. Netlify is excluded from CI to stay under the free build minutes cap; it still auto-deploys via its native Git integration on push.
+- **`.github/workflows/deploys.yml`** (deploy verifier) — Vercel and Cloudflare Workers jobs. Each polls its public URL until the `x-commit-sha` meta tag matches the just-pushed commit, fails after ~10 min if a platform never catches up. Reads URLs from repo variables `VERCEL_URL` and `CLOUDFLARE_URL`; jobs skip cleanly when the variable isn't set. Netlify is excluded from CI to stay under the free build minutes cap; it still auto-deploys via its native Git integration on push.
 
 The SHA tag is rendered by `__root.tsx` from `import.meta.env.VITE_COMMIT_SHA`, baked at build time by `vite.config.ts` from `VERCEL_GIT_COMMIT_SHA` / `COMMIT_REF` / `WORKERS_CI_COMMIT_SHA` / `CF_PAGES_COMMIT_SHA` / `GITHUB_SHA` (whichever the host CI provides).
+
+Set the repo variables once per fork (no code edit needed):
+
+```bash
+gh variable set VERCEL_URL     --body "https://your-app.vercel.app"
+gh variable set CLOUDFLARE_URL --body "https://your-worker.subdomain.workers.dev"
+```
 
 ## Deploying
 
@@ -397,7 +404,11 @@ Files to update:
 - `public/.well-known/security.txt`: `Contact:` and `Canonical:`
 - `.env.example`
 - `README.md`: badge URLs at the top (point them at your fork's CI/Deploys workflows and your platform demo URLs)
-- `.github/workflows/deploys.yml`: replace `tanvex-demo.vercel.app` and `tanvex.hello-8fa.workers.dev` with your own deploy URLs
+- Repo variables for the Deploys workflow (no code edit, one-time per fork):
+  ```bash
+  gh variable set VERCEL_URL     --body "https://your-app.vercel.app"
+  gh variable set CLOUDFLARE_URL --body "https://your-worker.subdomain.workers.dev"
+  ```
 
 ## License
 

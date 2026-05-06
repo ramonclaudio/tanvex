@@ -1,4 +1,7 @@
-export const SITE_URL = import.meta.env.VITE_SITE_URL ?? "https://tanvex-demo.vercel.app"
+// SITE_URL falls back to localhost so a forker who skips `VITE_SITE_URL`
+// produces obvious-wrong-in-prod SEO meta instead of pointing at someone
+// else's deploy. Set `VITE_SITE_URL=https://your-app.example.com` per env.
+export const SITE_URL = import.meta.env.VITE_SITE_URL ?? "http://localhost:3000"
 export const SITE_NAME = "tanvex"
 export const SITE_TITLE = "tanvex: TanStack Start on Vite 8 + Oxc, Tailwind v4, Base UI"
 export const SITE_DESCRIPTION =

@@ -1,5 +1,15 @@
 name: Deploys
 
+# Verifies each deploy target serves the just-pushed commit by checking the
+# `x-commit-sha` meta tag in its SSR'd HTML. Catches cases where a build
+# claims success but the production URL is still serving an older bundle.
+#
+# Each platform's URL is read from a repo variable. If a variable isn't set,
+# the corresponding job skips cleanly. Set per-fork:
+#
+#   gh variable set VERCEL_URL     --body "https://your-app.vercel.app"
+#   gh variable set CLOUDFLARE_URL --body "https://your-worker.subdomain.workers.dev"
+
 on:
   push:
     branches: [main]
@@ -14,6 +24,7 @@ concurrency:
 
 jobs:
   vercel:
+    if: ${{ vars.VERCEL_URL != '' }}
     name: Vercel
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -21,10 +32,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/wait-for-sha
         with:
-          url: https://tanvex-demo.vercel.app
+          url: ${{ vars.VERCEL_URL }}
           expected: ${{ github.sha }}
 
   cloudflare:
+    if: ${{ vars.CLOUDFLARE_URL != '' }}
     name: Cloudflare Workers
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -32,5 +44,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/wait-for-sha
         with:
-          url: https://tanvex.hello-8fa.workers.dev
+          url: ${{ vars.CLOUDFLARE_URL }}
           expected: ${{ github.sha }}
