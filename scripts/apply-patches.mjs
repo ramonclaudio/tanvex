@@ -8,17 +8,20 @@
  *
  * Why not bun's `patchedDependencies`? Bun-only.
  *
+ * Why `git apply` over the system `patch` binary? `patch` isn't always
+ * present in minimal containers (Vercel's build image, some Alpine bases).
+ * `git` is universally available wherever Node runs in CI or dev. `git apply`
+ * also handles git-style headers (`new file mode 100644`, full SHA hashes)
+ * cleanly, which is the format both `bun patch` and `patch-package` produce.
+ *
  * Filename formats supported:
  *   <pkg>@<version>.patch                     (bun, URL-encoded scope)
  *   <pkg>+<version>.patch                     (patch-package, + separators)
  *   @scope%2F<pkg>@<version>.patch            (bun scoped)
  *   @scope+<pkg>+<version>.patch              (patch-package scoped)
  *
- * Idempotent: if a patch is already applied (reverse dry-run succeeds),
- * skip it. Safe to run twice.
- *
- * Uses the system `patch` utility (POSIX-standard, present on macOS, Linux,
- * and Git Bash on Windows).
+ * Idempotent: detects already-applied patches via reverse dry-run.
+ * Safe to run twice.
  */
 
 import { spawnSync } from "node:child_process"
@@ -59,6 +62,23 @@ function packageNameFromFile(file) {
   return decoded.slice(0, at)
 }
 
+/**
+ * Run `git apply` with the given args. Captures stdout/stderr. Returns the
+ * raw spawnSync result so callers can branch on `status` and `error`.
+ *
+ * Sets `GIT_CEILING_DIRECTORIES` to the repo root so git stops walking up
+ * to find a parent `.git`. Without this, the parent repo's gitignore
+ * (which excludes `node_modules`) makes `git apply` silently skip the
+ * patches with a "Skipped patch" message and exit 0.
+ */
+function gitApply(args, patchPath, pkgDir) {
+  return spawnSync("git", ["apply", ...args, "-p1", patchPath], {
+    cwd: pkgDir,
+    stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env, GIT_CEILING_DIRECTORIES: ROOT },
+  })
+}
+
 let failed = 0
 let applied = 0
 let skipped = 0
@@ -83,46 +103,38 @@ for (const file of files) {
 
   const patchPath = resolve(ROOT, PATCH_DIR, file)
 
-  // Dry-run first to gate the real apply. `--dry-run` does not write reject
-  // files, so this is safe to run repeatedly. `-N` makes patch detect
-  // already-applied hunks instead of prompting.
-  const dry = spawnSync("patch", ["-p1", "-N", "--dry-run", "-i", patchPath], {
-    cwd: pkgDir,
-    stdio: ["ignore", "pipe", "pipe"],
-  })
-  const dryOut = (dry.stderr?.toString() ?? "") + (dry.stdout?.toString() ?? "")
-  const alreadyApplied =
-    /Skipping patch|Ignoring previously applied|Reversed \(or previously applied\) patch detected/.test(
-      dryOut,
-    )
+  // Forward dry-run: can we apply cleanly?
+  const fwdCheck = gitApply(["--check"], patchPath, pkgDir)
 
-  if (alreadyApplied) {
+  if (fwdCheck.status === 0) {
+    // Apply for real.
+    const apply = gitApply([], patchPath, pkgDir)
+    if (apply.status === 0) {
+      console.error(`apply-patches: ${pkg} ok`)
+      applied++
+    } else {
+      const out = (apply.stderr?.toString() ?? "") + (apply.stdout?.toString() ?? "")
+      console.error(`apply-patches: ${pkg} FAILED (apply exit ${apply.status})`)
+      if (out.trim()) console.error(out.trim())
+      failed++
+    }
+    continue
+  }
+
+  // Forward failed: try reverse to see if patch is already applied.
+  const revCheck = gitApply(["--reverse", "--check"], patchPath, pkgDir)
+  if (revCheck.status === 0) {
     console.error(`apply-patches: ${pkg} already patched`)
     skipped++
     continue
   }
 
-  if (dry.status !== 0) {
-    console.error(`apply-patches: ${pkg} FAILED (dry-run exit ${dry.status})`)
-    if (dryOut.trim()) console.error(dryOut.trim())
-    failed++
-    continue
-  }
-
-  // Real apply.
-  const apply = spawnSync("patch", ["-p1", "-N", "-i", patchPath], {
-    cwd: pkgDir,
-    stdio: ["ignore", "pipe", "pipe"],
-  })
-  if (apply.status === 0) {
-    console.error(`apply-patches: ${pkg} ok`)
-    applied++
-  } else {
-    const out = (apply.stderr?.toString() ?? "") + (apply.stdout?.toString() ?? "")
-    console.error(`apply-patches: ${pkg} FAILED (exit ${apply.status})`)
-    if (out.trim()) console.error(out.trim())
-    failed++
-  }
+  // Both forward and reverse failed: real conflict, or git apply unavailable.
+  const out = (fwdCheck.stderr?.toString() ?? "") + (fwdCheck.stdout?.toString() ?? "")
+  console.error(`apply-patches: ${pkg} FAILED (forward check exit ${fwdCheck.status})`)
+  if (fwdCheck.error) console.error(`spawn error: ${fwdCheck.error.message}`)
+  if (out.trim()) console.error(out.trim())
+  failed++
 }
 
 const summary = [
