@@ -1,6 +1,7 @@
 [build]
-command = "npm run build"
+command = "bun run build"
 publish = "dist"
+environment = { BUN_VERSION = "1.3.13" }
 
 [functions]
 directory = ".netlify/functions-internal"

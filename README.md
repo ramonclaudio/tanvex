@@ -18,9 +18,9 @@ Needs Node 20+ or [Bun](https://bun.sh), a [Convex](https://convex.dev) account 
 ```bash
 git clone https://github.com/ramonclaudio/tanvex.git
 cd tanvex
-npm install         # or bun install, pnpm install, yarn install
-npm run setup       # or bun run setup, pnpm setup, yarn setup
-npm run dev         # or bun run dev, pnpm dev, yarn dev
+bun install         # or pnpm install, npm install, yarn install
+bun run setup       # or pnpm setup, npm run setup, yarn setup
+bun run dev         # or pnpm dev, npm run dev, yarn dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). Sign up with a real email, you'll get an OTP from Resend.
@@ -28,7 +28,7 @@ Open [http://localhost:3000](http://localhost:3000). Sign up with a real email, 
 For local Convex via Docker instead of cloud:
 
 ```bash
-npm run setup:local
+bun run setup:local
 ```
 
 ## What `setup` does
@@ -206,7 +206,7 @@ cp .env.example .env.prod
 The dev deployment is created by `bun run setup` on first run. To provision prod:
 
 ```bash
-bunx convex deploy --cmd "npm run build"
+bunx convex deploy --cmd "bun run build"
 ```
 
 Set Convex env vars on each deployment. Dev (no flag) and prod (`--prod`):
@@ -275,7 +275,7 @@ netlify env:set VITE_SITE_URL      "https://your-app.netlify.app" --context prod
 # Deploy preview = dev Convex (--context deploy-preview), branch = same (--context branch-deploy)
 ```
 
-The shipped `netlify.toml` declares build command (`npm run build`), publish dir (`dist`, where Nitro emits client assets), and the SSR functions dir (`.netlify/functions-internal`).
+The shipped `netlify.toml` declares build command (`bun run build`), publish dir (`dist`, where Nitro emits client assets), the SSR functions dir (`.netlify/functions-internal`), and pins `BUN_VERSION=1.3.13` so the build environment matches the local lockfile.
 
 ### Cloudflare Workers
 
@@ -303,7 +303,7 @@ Don't create a Pages project for new deploys. Pages reserves the `ASSETS` bindin
 
 ### Other platforms
 
-Anywhere Nitro runs: Node, Bun, AWS Lambda, Deno Deploy, etc. Set `NITRO_PRESET` in your build env (e.g. `NITRO_PRESET=node-server`) and run `npm run build`. Output lands in `.output/`.
+Anywhere Nitro runs: Node, Bun, AWS Lambda, Deno Deploy, etc. Set `NITRO_PRESET` in your build env (e.g. `NITRO_PRESET=node-server`) and run `bun run build`. Output lands in `.output/`.
 
 ## Project structure
 

@@ -1,3 +1,10 @@
 name = "tanvex"
 compatibility_date = "2026-05-06"
 compatibility_flags = ["nodejs_compat"]
+
+# Workers Builds reads `build.command` and runs it after install. Bun version
+# is detected from `bun.lock`. Override with the `BUN_VERSION` env var on the
+# Cloudflare Worker if you need a specific bun (set via dashboard or
+# `bunx wrangler secret put BUN_VERSION`).
+[build]
+command = "bun run build"

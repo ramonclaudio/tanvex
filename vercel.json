@@ -1,5 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "rm -rf node_modules && bunx bun@1.3.13 install",
-  "buildCommand": "npm run build"
+  "buildCommand": "bun run build"
 }
