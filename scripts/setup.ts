@@ -263,8 +263,8 @@ try {
     line(runtime)
     process.exit(0)
   }
-  argLocal = !!values.local
-  argFresh = !!values.fresh
+  argLocal = values.local ?? false
+  argFresh = values.fresh ?? false
 } catch (err) {
   bad(err instanceof Error ? err.message : String(err))
   note("try: <pm> run setup --help")
