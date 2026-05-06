@@ -101,7 +101,7 @@ SSR auth works because the root route fetches the auth token via `createServerFn
 - Top header bar with home icon, user menu, and theme toggle, semantic `<header>` + `<main id="main">` landmarks, working skip link, `prefers-reduced-motion` respected globally
 - `public/.well-known/security.txt` per RFC 9116
 - `public/llms.txt` + `public/llms-full.txt` for Claude, Perplexity, ChatGPT Search
-- `env.example` documenting the `VITE_SITE_URL` pattern, typed via `src/vite-env.d.ts`
+- `.env.example` documenting the `VITE_SITE_URL` pattern, typed via `src/vite-env.d.ts`
 
 ## Routes
 
@@ -176,28 +176,28 @@ Two-part deploy: Convex backend + a frontend host. Each side has separate **dev*
 
 ### Environments at a glance
 
-| Layer          | Dev                                           | Prod                                              |
-| -------------- | --------------------------------------------- | ------------------------------------------------- |
-| Convex backend | `dev:<project>` (auto, written by `setup`)    | `prod:<project>` (one-time, `bunx convex deploy`) |
-| Frontend env   | `.env.local` (gitignored, written by `setup`) | `.env.prod` (gitignored, copy from `env.example`) |
-| Host config    | Preview + Development env vars on the host    | Production env vars on the host                   |
-| Convex secrets | `bunx convex env set NAME VALUE`              | `bunx convex env set NAME VALUE --prod`           |
+| Layer          | Dev                                           | Prod                                               |
+| -------------- | --------------------------------------------- | -------------------------------------------------- |
+| Convex backend | `dev:<project>` (auto, written by `setup`)    | `prod:<project>` (one-time, `bunx convex deploy`)  |
+| Frontend env   | `.env.local` (gitignored, written by `setup`) | `.env.prod` (gitignored, copy from `.env.example`) |
+| Host config    | Preview + Development env vars on the host    | Production env vars on the host                    |
+| Convex secrets | `bunx convex env set NAME VALUE`              | `bunx convex env set NAME VALUE --prod`            |
 
 ### Local env files
 
 Three files for the frontend:
 
-- `env.example` — committed template documenting every var
+- `.env.example` — committed template documenting every var
 - `.env.local` — gitignored, your dev values, written by `bun run setup`
-- `.env.prod` — gitignored, your prod values, you create from `env.example`
+- `.env.prod` — gitignored, your prod values, you create from `.env.example`
 
 ```bash
 # Dev (after cloning)
-cp env.example .env.local
+cp .env.example .env.local
 bun run setup       # writes Convex dev URLs into .env.local
 
 # Prod (one-time, after provisioning a prod Convex deployment)
-cp env.example .env.prod
+cp .env.example .env.prod
 # edit .env.prod with your prod CONVEX_DEPLOYMENT, VITE_CONVEX_URL, etc.
 ```
 
@@ -372,7 +372,7 @@ Files to update:
 - `public/robots.txt`: `Sitemap:` line
 - `public/sitemap.xml`: `<loc>` entries
 - `public/.well-known/security.txt`: `Contact:` and `Canonical:`
-- `env.example`
+- `.env.example`
 
 ## License
 
