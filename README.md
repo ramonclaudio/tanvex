@@ -2,7 +2,6 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/ramonclaudio/tanvex/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ramonclaudio/tanvex/actions/workflows/ci.yml)
-[![Deploys](https://github.com/ramonclaudio/tanvex/actions/workflows/deploys.yml/badge.svg?branch=main)](https://github.com/ramonclaudio/tanvex/actions/workflows/deploys.yml)
 [![Vercel](https://img.shields.io/badge/Vercel-tanvex--demo-000?logo=vercel)](https://tanvex-demo.vercel.app)
 [![Netlify](https://img.shields.io/badge/Netlify-tanvex-00C7B7?logo=netlify&logoColor=white)](https://tanvex.netlify.app)
 [![Cloudflare](https://img.shields.io/badge/Cloudflare%20Workers-tanvex-F38020?logo=cloudflare&logoColor=white)](https://tanvex.hello-8fa.workers.dev)
@@ -186,19 +185,11 @@ Ships delivery events (`delivered`, `bounced`, `complained`) back to Convex. Aut
 
 ## Continuous integration
 
-Two GitHub Actions workflows run on every push to `main` and every PR:
+`.github/workflows/ci.yml` runs on every push to `main` and every PR. For each of `bun`, `pnpm`, `npm`, `yarn`: install, typecheck, lint, fmt:check, test, build. Any failure on any PM blocks merge. This is what proves the runtime-agnostic claim.
 
-- **`.github/workflows/ci.yml`** (matrix verify gate) — for each of `bun`, `pnpm`, `npm`, `yarn`: install, typecheck, lint, fmt:check, test, build. Any failure on any PM blocks merge. This is what proves the runtime-agnostic claim.
-- **`.github/workflows/deploys.yml`** (deploy verifier) — Vercel and Cloudflare Workers jobs. Each polls its public URL until the `x-commit-sha` meta tag matches the just-pushed commit, fails after ~10 min if a platform never catches up. Reads URLs from repo variables `VERCEL_URL` and `CLOUDFLARE_URL`; jobs skip cleanly when the variable isn't set. Netlify is excluded from CI to stay under the free build minutes cap; it still auto-deploys via its native Git integration on push.
+Deploy success is verified by each platform's native check (Vercel commit status, Cloudflare Workers Builds). No GitHub Actions deploy verifier — the natives are sufficient.
 
-The SHA tag is rendered by `__root.tsx` from `import.meta.env.VITE_COMMIT_SHA`, baked at build time by `vite.config.ts` from `VERCEL_GIT_COMMIT_SHA` / `COMMIT_REF` / `WORKERS_CI_COMMIT_SHA` / `CF_PAGES_COMMIT_SHA` / `GITHUB_SHA` (whichever the host CI provides).
-
-Set the repo variables once per fork (no code edit needed):
-
-```bash
-gh variable set VERCEL_URL     --body "https://your-app.vercel.app"
-gh variable set CLOUDFLARE_URL --body "https://your-worker.subdomain.workers.dev"
-```
+Each SSR'd page includes `<meta name="x-commit-sha" content="...">` so you can confirm a live URL is serving the expected commit via "view source." The SHA is baked at build time by `vite.config.ts` from `VERCEL_GIT_COMMIT_SHA` / `COMMIT_REF` / `WORKERS_CI_COMMIT_SHA` / `CF_PAGES_COMMIT_SHA` / `GITHUB_SHA` (whichever the host CI provides), then rendered by `src/routes/__root.tsx`.
 
 ## Deploying
 
@@ -403,12 +394,7 @@ Files to update:
 - `public/sitemap.xml`: `<loc>` entries
 - `public/.well-known/security.txt`: `Contact:` and `Canonical:`
 - `.env.example`
-- `README.md`: badge URLs at the top (point them at your fork's CI/Deploys workflows and your platform demo URLs)
-- Repo variables for the Deploys workflow (no code edit, one-time per fork):
-  ```bash
-  gh variable set VERCEL_URL     --body "https://your-app.vercel.app"
-  gh variable set CLOUDFLARE_URL --body "https://your-worker.subdomain.workers.dev"
-  ```
+- `README.md`: badge URLs at the top (point them at your fork's CI workflow and your platform demo URLs)
 
 ## License
 

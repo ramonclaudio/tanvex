@@ -6,9 +6,10 @@ import { nitro } from "nitro/vite"
 import { visualizer } from "rollup-plugin-visualizer"
 import { defineConfig, loadEnv } from "vite"
 
-// Commit SHA injected into the bundle so deploy CI can verify each platform
-// is serving the latest commit (see `.github/actions/wait-for-sha`). Read
-// from whatever git env var the host CI provides.
+// Commit SHA injected into the bundle and rendered as `<meta name="x-commit-sha">`
+// by `src/routes/__root.tsx`. Useful for "view source" verification that a live
+// URL is serving the expected commit. Read from whatever git env var the host CI
+// provides.
 const commitSha =
   process.env.VERCEL_GIT_COMMIT_SHA ??
   process.env.COMMIT_REF ??
