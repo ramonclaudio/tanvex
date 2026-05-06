@@ -193,8 +193,6 @@ If you skip both, SEO meta will point at `localhost`. Search engines and social 
 
 `.github/workflows/ci.yml` runs on every push to `main` and every PR. For each of `bun`, `pnpm`, `npm`, `yarn`: install, typecheck, lint, fmt:check, test, build. Any failure on any PM blocks merge. Deploy success is verified by each platform's native check (Vercel commit status, Cloudflare Workers Builds).
 
-Each SSR'd page includes `<meta name="x-commit-sha" content="...">` so you can confirm a live URL is on the expected commit via "view source." Baked at build time by `vite.config.ts` from `VERCEL_GIT_COMMIT_SHA` / `COMMIT_REF` / `WORKERS_CI_COMMIT_SHA` / `CF_PAGES_COMMIT_SHA` / `GITHUB_SHA`.
-
 ## Deploying
 
 Two parts: a Convex backend and a frontend host. Nitro auto-detects the host from build env (`VERCEL`, `NETLIFY`, Cloudflare Workers) and emits the right output. Security headers, build commands, and bun version are pinned in the shipped `vercel.json`, `netlify.toml`, and `wrangler.toml` — no edits needed. `VITE_*` env vars are build-time, set them in the platform's env vars before deploys.

@@ -104,9 +104,6 @@ export const Route = createRootRouteWithContext<{
       { name: "format-detection", content: "telephone=no" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: SITE_NAME },
-      ...(import.meta.env.VITE_COMMIT_SHA
-        ? [{ name: "x-commit-sha", content: import.meta.env.VITE_COMMIT_SHA }]
-        : []),
       // Uncomment and fill in after registering in Google Search Console / Bing Webmaster.
       // { name: "google-site-verification", content: "YOUR_TOKEN" },
       // { name: "msvalidate.01", content: "YOUR_TOKEN" },

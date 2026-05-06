@@ -6,18 +6,6 @@ import { nitro } from "nitro/vite"
 import { visualizer } from "rollup-plugin-visualizer"
 import { defineConfig, loadEnv } from "vite"
 
-// Commit SHA injected into the bundle and rendered as `<meta name="x-commit-sha">`
-// by `src/routes/__root.tsx`. Useful for "view source" verification that a live
-// URL is serving the expected commit. Read from whatever git env var the host CI
-// provides.
-const commitSha =
-  process.env.VERCEL_GIT_COMMIT_SHA ??
-  process.env.COMMIT_REF ??
-  process.env.WORKERS_CI_COMMIT_SHA ??
-  process.env.CF_PAGES_COMMIT_SHA ??
-  process.env.GITHUB_SHA ??
-  ""
-
 const securityHeaders: Record<string, string> = {
   "strict-transport-security": "max-age=63072000; includeSubDomains",
   "x-content-type-options": "nosniff",
@@ -91,7 +79,6 @@ export default defineConfig(({ mode }) => {
       "process.env.VITE_CONVEX_SITE_URL": JSON.stringify(convexSiteUrl),
       "process.env.CONVEX_SITE_URL": JSON.stringify(convexSiteUrl),
       "process.env.SITE_URL": JSON.stringify(siteUrl),
-      "import.meta.env.VITE_COMMIT_SHA": JSON.stringify(commitSha),
     },
     plugins: [
       devtools(),
