@@ -170,7 +170,11 @@ Ships delivery events (`delivered`, `bounced`, `complained`) back to Convex. Aut
 3. Copy the signing secret
 4. `npx convex env set RESEND_WEBHOOK_SECRET <secret>`
 
-## Deploy
+## Deploying
+
+Two-part deploy: Convex backend + a frontend host. Nitro auto-detects the host from build env (`VERCEL`, `NETLIFY`, Cloudflare Workers) and emits the right output. Security headers ship from `routeRules` in `vite.config.ts`, same on every preset.
+
+### Convex backend
 
 ```bash
 npx convex deploy --cmd "npm run build"
@@ -187,7 +191,30 @@ npx convex env set APP_NAME "Your App" --prod
 npx convex env set RESEND_TEST_MODE false --prod
 ```
 
-Then set `CONVEX_DEPLOYMENT=prod:your-project-name` and `SITE_URL` on your host. Nitro auto-detects the preset so Vercel, Cloudflare Pages, Netlify, Node, and Bun all work without extra config.
+Then set `CONVEX_DEPLOYMENT=prod:your-project-name` and `SITE_URL` on your frontend host.
+
+### Vercel
+
+Push the repo, import in the [Vercel dashboard](https://vercel.com/new). Set `BUN_VERSION=1.3.13` as a project env var so Vercel uses a bun version that resolves TanStack's nested zod correctly (the preinstalled version lags). The shipped `vercel.json` is minimal (just the build command for documentation); Vercel auto-detects bun from `bun.lock` and Nitro emits to `.vercel/output/`.
+
+### Netlify
+
+Push the repo, connect in the [Netlify dashboard](https://app.netlify.com/start). The shipped `netlify.toml` declares build command (`npm run build`), publish dir (`dist`), and the SSR functions dir (`.netlify/functions-internal`). Nothing to configure.
+
+### Cloudflare Workers
+
+Cloudflare recommends Workers + Static Assets for new projects. Pages reached feature parity in 2026 and was effectively superseded. Push the repo, then in the [Cloudflare dashboard](https://dash.cloudflare.com) → Workers & Pages → Create → Workers, connect the repo. Set:
+
+- Build command: `npm run build`
+- Deploy command: `npx wrangler deploy` (or `bunx wrangler deploy`)
+
+Nitro auto-detects the build env and uses its `cloudflare-module` preset, emitting `.output/server/index.mjs` (the Worker) plus `.output/public/` (static assets bound to `ASSETS`). The shipped `wrangler.toml` declares `compatibility_date` and `nodejs_compat`. Nitro auto-generates the rest of the deploy config (`.output/server/wrangler.json`) at build time.
+
+Don't create a Pages project for new deployments. Pages reserves the `ASSETS` binding name that Nitro's modern preset uses, which causes deploy to fail.
+
+### Other platforms
+
+Anywhere Nitro runs: Node, Bun, AWS Lambda, Deno Deploy, etc. Set `NITRO_PRESET` in your build env (e.g. `NITRO_PRESET=node-server`) and run `npm run build`. Output lands in `.output/`.
 
 ## Project structure
 
