@@ -24,5 +24,7 @@ __unconfig*
 !.vscode/extensions.json
 .vercel
 
-# AGENTS.md is the convex ai-files entry-point, shared with cloners
+# AGENTS.md is the convex ai-files entry-point, shared with cloners.
+# CLAUDE.md is a symlink to AGENTS.md so Claude Code reads the same content.
 !AGENTS.md
+!CLAUDE.md
