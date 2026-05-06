@@ -8,3 +8,13 @@ compatibility_flags = ["nodejs_compat"]
 # `bunx wrangler secret put BUN_VERSION`).
 [build]
 command = "bun run build"
+
+# Public env vars baked into the Worker. Update these for your own deploy.
+# Backend secrets (BETTER_AUTH_SECRET, RESEND_API_KEY, etc.) live on the
+# Convex deployment, not here. See `.env.convex.example`.
+[vars]
+CONVEX_DEPLOYMENT = "prod:reminiscent-woodpecker-169"
+VITE_CONVEX_URL = "https://reminiscent-woodpecker-169.convex.cloud"
+VITE_CONVEX_SITE_URL = "https://reminiscent-woodpecker-169.convex.site"
+SITE_URL = "https://tanvex.hello-8fa.workers.dev"
+VITE_SITE_URL = "https://tanvex.hello-8fa.workers.dev"
