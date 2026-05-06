@@ -5,7 +5,7 @@ description: >
   shadcn base-ui Luma style with neutral palette, Geist typography, Hugeicons
   icon library, default radius, subtle menu accent, and translucent menu
   surfaces. Generated via shadcn preset code `b1VlJDbW` and the init command
-  `bunx --bun shadcn@latest init --preset b1VlJDbW --base base --template start`.
+  `npx shadcn@latest init --preset b1VlJDbW --base base --template start`.
 colors:
   background: "#FFFFFF"
   foreground: "#262626"
@@ -259,7 +259,7 @@ Currently in `src/components/ui/`. Use these directly, don't reinstall.
 
 ### Available (not installed)
 
-The full base-luma surface area, ready to install via `bunx --bun shadcn@latest add <name>`. They inherit the Luma styling automatically — don't reproduce token recipes when adding them, and don't add them to DESIGN.md unless we override the default.
+The full base-luma surface area, ready to install via `npx shadcn@latest add <name>`. They inherit the Luma styling automatically — don't reproduce token recipes when adding them, and don't add them to DESIGN.md unless we override the default.
 
 **Layout & navigation**
 
@@ -359,7 +359,7 @@ Before building a UI from scratch, look at the canonical examples. The shadcn `/
 Each example is also a shadcn registry item. To install one directly:
 
 ```bash
-bunx --bun shadcn@latest add @shadcn/dialog-example
+npx shadcn@latest add @shadcn/dialog-example
 ```
 
 This installs the example file plus all its registry dependencies (e.g. `dialog-example` pulls `dialog`, `button`, `field`, `input`, `input-group`, `kbd`, `select`, `switch`, `tabs`, `textarea`, `tooltip`, and `native-select`). Useful when you want a realistic starting point rather than a single primitive.
@@ -397,4 +397,4 @@ Components that aren't shadcn primitives — these encode our specific decisions
 
 **Don't** redefine spacing in components. Page padding, section gap, and form width are tokens above; reach for `--spacing-*` values or the named utilities, not new magic numbers.
 
-**Don't** re-encode shadcn primitive recipes in DESIGN.md when adding a new component. `bunx --bun shadcn@latest add <name>` lands the Luma styling automatically; only add a recipe here if you're overriding the default.
+**Don't** re-encode shadcn primitive recipes in DESIGN.md when adding a new component. `npx shadcn@latest add <name>` lands the Luma styling automatically; only add a recipe here if you're overriding the default.
