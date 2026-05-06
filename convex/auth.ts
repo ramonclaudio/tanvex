@@ -106,9 +106,28 @@ export const { onCreate, onDelete } = authComponent.triggersApi()
 // Export client API for AuthBoundary and other client-side auth checks
 export const { getAuthUser } = authComponent.clientApi()
 
+/**
+ * Parse `TRUSTED_ORIGINS` env var (comma-separated URLs) for sites other than
+ * `SITE_URL` that are allowed to hit auth endpoints. Use when the same Convex
+ * backend serves multiple frontend deploys (e.g. Vercel + Netlify + custom
+ * domain). Better Auth rejects state-changing requests whose Origin header
+ * doesn't match `baseURL` or sit in this list.
+ *
+ *   bunx convex env set TRUSTED_ORIGINS "https://tanvex.netlify.app,https://www.example.com" --prod
+ */
+function getTrustedOrigins(): string[] {
+  const raw = process.env.TRUSTED_ORIGINS
+  if (!raw) return []
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
 export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
   ({
     baseURL: getSiteUrl(),
+    trustedOrigins: getTrustedOrigins(),
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,
