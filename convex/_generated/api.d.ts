@@ -15,6 +15,7 @@ import type * as email from "../email.js";
 import type * as errors from "../errors.js";
 import type * as functions from "../functions.js";
 import type * as http from "../http.js";
+import type * as origins from "../origins.js";
 import type * as rateLimit from "../rateLimit.js";
 import type * as users from "../users.js";
 import type * as validators from "../validators.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   errors: typeof errors;
   functions: typeof functions;
   http: typeof http;
+  origins: typeof origins;
   rateLimit: typeof rateLimit;
   users: typeof users;
   validators: typeof validators;
