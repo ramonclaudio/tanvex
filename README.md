@@ -1,7 +1,11 @@
 # tanvex
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Live demo](https://img.shields.io/badge/demo-tanvex--demo.vercel.app-000?logo=vercel)](https://tanvex-demo.vercel.app)
+[![CI](https://github.com/ramonclaudio/tanvex/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ramonclaudio/tanvex/actions/workflows/ci.yml)
+[![Deploys](https://github.com/ramonclaudio/tanvex/actions/workflows/deploys.yml/badge.svg?branch=main)](https://github.com/ramonclaudio/tanvex/actions/workflows/deploys.yml)
+[![Vercel](https://img.shields.io/badge/Vercel-tanvex--demo-000?logo=vercel)](https://tanvex-demo.vercel.app)
+[![Netlify](https://img.shields.io/badge/Netlify-tanvex-00C7B7?logo=netlify&logoColor=white)](https://tanvex.netlify.app)
+[![Cloudflare](https://img.shields.io/badge/Cloudflare%20Workers-tanvex-F38020?logo=cloudflare&logoColor=white)](https://tanvex.hello-8fa.workers.dev)
 
 ![tanvex](public/og.png)
 
@@ -10,6 +14,16 @@ Every TanStack Start starter on GitHub ships last year's choices, and most don't
 Email + password auth with username sign-in and OTP verification through Resend. User profiles with avatar uploads to Convex storage. Rate limits on auth and API endpoints. SSR auth that works during server render. On top of Vite 8 with Rolldown+Oxc, Tailwind v4, shadcn/ui `base-luma` on Base UI `@base-ui/react` primitives, Oxlint and Oxfmt from the Oxc toolchain.
 
 TanStack Start + Convex + Better Auth + React 19 + TypeScript 6 + Tailwind v4 + Zod v4. Runtime-agnostic: setup, daily workflow, and CI all run under bun, pnpm, npm, or yarn. The `scripts/_run.mjs` launcher picks bun -> tsx -> npx tsx automatically.
+
+## Live demos
+
+Same codebase, three hosts, one shared Convex backend:
+
+- Vercel: https://tanvex-demo.vercel.app
+- Netlify: https://tanvex.netlify.app
+- Cloudflare Workers: https://tanvex.hello-8fa.workers.dev
+
+Each platform builds with `bun run build` (pinned `bun@1.3.13`) and deploys via its native Git integration. Auth and `/api/*` work across all three because Convex `SITE_URL` is set to the canonical Vercel URL and `TRUSTED_ORIGINS` allows the Netlify and Cloudflare hosts. See [Deploying](#deploying) for the full setup.
 
 ## Install
 
@@ -169,6 +183,22 @@ Ships delivery events (`delivered`, `bounced`, `complained`) back to Convex. Aut
 2. Go to [resend.com/webhooks](https://resend.com/webhooks), point at `https://<project>.convex.site/resend-webhook`
 3. Copy the signing secret
 4. `npx convex env set RESEND_WEBHOOK_SECRET <secret>`
+
+## Continuous integration
+
+Two GitHub Actions workflows run on every push to `main` and every PR:
+
+- **`.github/workflows/ci.yml`** (matrix verify gate) — for each of `bun`, `pnpm`, `npm`, `yarn`: install, typecheck, lint, fmt:check, test, build. Any failure on any PM blocks merge. This is what proves the runtime-agnostic claim.
+- **`.github/workflows/deploys.yml`** (deploy verifier) — three parallel jobs (Vercel / Netlify / Cloudflare Workers). Each polls its public URL until the `x-commit-sha` meta tag matches the just-pushed commit, fails after ~10 min if a platform never catches up. The Netlify job also fires the build hook (`NETLIFY_BUILD_HOOK_URL` repo secret) to bypass content-dedupe.
+
+The SHA tag is rendered by `__root.tsx` from `import.meta.env.VITE_COMMIT_SHA`, baked at build time by `vite.config.ts` from `VERCEL_GIT_COMMIT_SHA` / `COMMIT_REF` / `WORKERS_CI_COMMIT_SHA` / `CF_PAGES_COMMIT_SHA` / `GITHUB_SHA` (whichever the host CI provides).
+
+Set the Netlify build hook once, after wiring up Netlify (see [Deploying → Netlify](#netlify)):
+
+```bash
+# Netlify dashboard -> Site -> Build & deploy -> Build hooks -> Add build hook
+gh secret set NETLIFY_BUILD_HOOK_URL --repo <owner>/<repo>
+```
 
 ## Deploying
 
@@ -373,6 +403,9 @@ Files to update:
 - `public/sitemap.xml`: `<loc>` entries
 - `public/.well-known/security.txt`: `Contact:` and `Canonical:`
 - `.env.example`
+- `README.md`: badge URLs at the top (point them at your fork's CI/Deploys workflows and your platform demo URLs)
+- `.github/workflows/deploys.yml`: replace `tanvex-demo.vercel.app`, `tanvex.netlify.app`, and `tanvex.hello-8fa.workers.dev` with your own deploy URLs
+- Repo secrets: set `NETLIFY_BUILD_HOOK_URL` (after creating the build hook in Netlify) so the Deploys workflow can fire it
 
 ## License
 
