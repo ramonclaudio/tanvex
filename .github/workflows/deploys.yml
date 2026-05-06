@@ -1,0 +1,60 @@
+name: Deploys
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploys-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  vercel:
+    name: Vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/wait-for-sha
+        with:
+          url: https://tanvex-demo.vercel.app
+          expected: ${{ github.sha }}
+
+  netlify:
+    name: Netlify
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      # Netlify dedupes builds when the base directory hash is unchanged.
+      # Fire the build hook so every push redeploys regardless. Set
+      # NETLIFY_BUILD_HOOK_URL secret on the GitHub repo (Netlify dashboard
+      # -> Site -> Build & deploy -> Build hooks -> Add build hook).
+      - name: Trigger build hook
+        env:
+          HOOK: ${{ secrets.NETLIFY_BUILD_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error::NETLIFY_BUILD_HOOK_URL secret not set"
+            exit 1
+          fi
+          curl -fsSL -X POST -d '{}' "$HOOK"
+      - uses: ./.github/actions/wait-for-sha
+        with:
+          url: https://tanvex.netlify.app
+          expected: ${{ github.sha }}
+
+  cloudflare:
+    name: Cloudflare Workers
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/wait-for-sha
+        with:
+          url: https://tanvex.hello-8fa.workers.dev
+          expected: ${{ github.sha }}
