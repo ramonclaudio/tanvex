@@ -2,9 +2,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/ramonclaudio/tanvex/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ramonclaudio/tanvex/actions/workflows/ci.yml)
-[![Vercel](https://img.shields.io/badge/Vercel-tanvex--demo-000?logo=vercel)](https://tanvex-demo.vercel.app)
-[![Netlify](https://img.shields.io/badge/Netlify-tanvex-00C7B7?logo=netlify&logoColor=white)](https://tanvex.netlify.app)
-[![Cloudflare](https://img.shields.io/badge/Cloudflare%20Workers-tanvex-F38020?logo=cloudflare&logoColor=white)](https://tanvex.hello-8fa.workers.dev)
+[![Vercel](https://img.shields.io/github/deployments/ramonclaudio/tanvex/Production?logo=vercel&label=Vercel)](https://tanvex-demo.vercel.app)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/f1b2bfc7-9f01-4960-afc9-ba4a08982866/deploy-status)](https://tanvex.netlify.app)
+[![Cloudflare](https://img.shields.io/github/check-runs/ramonclaudio/tanvex/main?nameFilter=Workers%20Builds%3A%20tanvex&logo=cloudflare&label=Cloudflare)](https://tanvex.hello-8fa.workers.dev)
 
 ![tanvex](public/og.png)
 
@@ -394,7 +394,11 @@ Files to update:
 - `public/sitemap.xml`: `<loc>` entries
 - `public/.well-known/security.txt`: `Contact:` and `Canonical:`
 - `.env.example`
-- `README.md`: badge URLs at the top (point them at your fork's CI workflow and your platform demo URLs)
+- `README.md` badge URLs at the top:
+  - CI: replace `ramonclaudio/tanvex` with your `<owner>/<repo>`
+  - Vercel: replace `ramonclaudio/tanvex` and the click-through URL
+  - Netlify: replace the site ID (find it in Netlify dashboard → Site configuration → General → API ID) and the click-through URL
+  - Cloudflare: replace `ramonclaudio/tanvex` and the `Workers Builds: tanvex` check name with your worker name (URL-encode the colon as `%3A`)
 
 ## License
 
