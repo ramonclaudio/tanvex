@@ -18,7 +18,7 @@ Same codebase, three hosts, one shared Convex backend:
 - Netlify: https://tanvex.netlify.app
 - Cloudflare Workers: https://tanvex.hello-8fa.workers.dev
 
-Each platform builds with `bun run build` (pinned `bun@1.3.13`) and deploys via its native Git integration. Auth and `/api/*` work across all three because Convex `SITE_URL` is set to the canonical Vercel URL and `TRUSTED_ORIGINS` allows the Netlify and Cloudflare hosts. See [Deploying](#deploying) for the full setup.
+Same codebase on each host, deploying via the host's native Git integration. See [Deploying](#deploying).
 
 ## Install
 
