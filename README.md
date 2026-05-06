@@ -394,11 +394,7 @@ Files to update:
 - `public/sitemap.xml`: `<loc>` entries
 - `public/.well-known/security.txt`: `Contact:` and `Canonical:`
 - `.env.example`
-- `README.md` badge URLs at the top:
-  - CI: replace `ramonclaudio/tanvex` with your `<owner>/<repo>`
-  - Vercel: replace `ramonclaudio/tanvex` and the click-through URL
-  - Netlify: replace the site ID (find it in Netlify dashboard → Site configuration → General → API ID) and the click-through URL
-  - Cloudflare: replace `ramonclaudio/tanvex` and the `Workers Builds: tanvex` check name with your worker name (URL-encode the colon as `%3A`)
+- `README.md` (replace it, the demos and badges are mine — write your own)
 
 ## License
 
