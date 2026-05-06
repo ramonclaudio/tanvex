@@ -1,10 +1,6 @@
 # tanvex
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/ramonclaudio/tanvex/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ramonclaudio/tanvex/actions/workflows/ci.yml)
-[![Vercel](https://img.shields.io/github/deployments/ramonclaudio/tanvex/Production?logo=vercel&label=Vercel)](https://tanvex-demo.vercel.app)
-[![Netlify Status](https://api.netlify.com/api/v1/badges/f1b2bfc7-9f01-4960-afc9-ba4a08982866/deploy-status)](https://tanvex.netlify.app)
-[![Cloudflare](https://img.shields.io/github/check-runs/ramonclaudio/tanvex/main?nameFilter=Workers%20Builds%3A%20tanvex&logo=cloudflare&label=Cloudflare)](https://tanvex.hello-8fa.workers.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-000000.svg)](https://opensource.org/licenses/MIT)
 
 ![tanvex](public/og.png)
 
@@ -193,138 +189,56 @@ Each SSR'd page includes `<meta name="x-commit-sha" content="...">` so you can c
 
 ## Deploying
 
-Two-part deploy: Convex backend + a frontend host. Each side has separate **dev** and **prod** environments. Nitro auto-detects the host from build env (`VERCEL`, `NETLIFY`, Cloudflare Workers) and emits the right output. Security headers ship from `routeRules` in `vite.config.ts`, same on every preset.
+Two parts: a Convex backend and a frontend host. Nitro auto-detects the host from build env vars and emits the right output. Security headers, build commands, and bun version are pinned in the shipped `vercel.json`, `netlify.toml`, and `wrangler.toml` — no edits needed.
 
-### Environments at a glance
-
-| Layer          | Dev                                           | Prod                                               |
-| -------------- | --------------------------------------------- | -------------------------------------------------- |
-| Convex backend | `dev:<project>` (auto, written by `setup`)    | `prod:<project>` (one-time, `bunx convex deploy`)  |
-| Frontend env   | `.env.local` (gitignored, written by `setup`) | `.env.prod` (gitignored, copy from `.env.example`) |
-| Host config    | Preview + Development env vars on the host    | Production env vars on the host                    |
-| Convex secrets | `bunx convex env set NAME VALUE`              | `bunx convex env set NAME VALUE --prod`            |
-
-### Local env files
-
-Three files for the frontend:
-
-- `.env.example` — committed template documenting every var
-- `.env.local` — gitignored, your dev values, written by `bun run setup`
-- `.env.prod` — gitignored, your prod values, you create from `.env.example`
+### Convex backend
 
 ```bash
-# Dev (after cloning)
-cp .env.example .env.local
-bun run setup       # writes Convex dev URLs into .env.local
-
-# Prod (one-time, after provisioning a prod Convex deployment)
-cp .env.example .env.prod
-# edit .env.prod with your prod CONVEX_DEPLOYMENT, VITE_CONVEX_URL, etc.
+bunx convex deploy --cmd "bun run build"     # provisions prod
 ```
 
-### Convex backend (dev and prod)
-
-The dev deployment is created by `bun run setup` on first run. To provision prod:
+Set the secrets on the prod deployment:
 
 ```bash
-bunx convex deploy --cmd "bun run build"
+bunx convex env set SITE_URL          https://your-app.example.com --prod
+bunx convex env set BETTER_AUTH_SECRET $(openssl rand -base64 32)   --prod
+bunx convex env set RESEND_API_KEY    re_your_key                   --prod
+bunx convex env set EMAIL_FROM        "Your App <noreply@yourdomain.com>" --prod
+bunx convex env set APP_NAME          "Your App"                    --prod
+bunx convex env set RESEND_TEST_MODE  false                         --prod
 ```
 
-Set Convex env vars on each deployment. Dev (no flag) and prod (`--prod`):
+`SITE_URL` is the canonical frontend host. `bun run setup` already wired the dev deployment locally.
 
-```bash
-# Dev
-bunx convex env set SITE_URL http://localhost:3000
-bunx convex env set BETTER_AUTH_SECRET $(openssl rand -base64 32)
-bunx convex env set RESEND_API_KEY re_your_dev_key
-bunx convex env set EMAIL_FROM "Your App (Dev) <onboarding@resend.dev>"
-bunx convex env set APP_NAME "Your App (Dev)"
-bunx convex env set RESEND_TEST_MODE true
+### Frontend host
 
-# Prod (rotate secrets, use real domain, disable test mode)
-bunx convex env set SITE_URL https://your-app.vercel.app --prod
-bunx convex env set BETTER_AUTH_SECRET $(openssl rand -base64 32) --prod
-bunx convex env set RESEND_API_KEY re_your_prod_key --prod
-bunx convex env set EMAIL_FROM "Your App <noreply@yourdomain.com>" --prod
-bunx convex env set APP_NAME "Your App" --prod
-bunx convex env set RESEND_TEST_MODE false --prod
-```
+Set these on the host (Production environment):
 
-See `.env.convex.example` for the full Convex-side reference.
+| Variable | Value |
+| --- | --- |
+| `CONVEX_DEPLOYMENT` | `prod:your-project` |
+| `VITE_CONVEX_URL` | `https://your-project.convex.cloud` |
+| `VITE_CONVEX_SITE_URL` | `https://your-project.convex.site` |
+| `SITE_URL` | `https://your-app.example.com` |
+| `VITE_SITE_URL` | same as `SITE_URL` |
 
-#### Multi-host deploys (e.g. Vercel + Netlify)
+#### Vercel
 
-When the same Convex backend serves more than one frontend deploy, set `TRUSTED_ORIGINS` (comma-separated) on the deployment for the additional URLs. `SITE_URL` is the canonical/baseURL host (used for emails, redirects, OAuth callbacks). `TRUSTED_ORIGINS` is the supplementary allowlist for auth + `/api/*` CORS.
+Import the repo in the [Vercel dashboard](https://vercel.com/new), paste the env vars above. Add `BUN_VERSION=1.3.13` (the `vercel.json` `installCommand` pins bun anyway, but setting it documents intent). Push to `main`, Vercel deploys.
 
-```bash
-bunx convex env set TRUSTED_ORIGINS "https://your-app.netlify.app" --prod
-bunx convex env set TRUSTED_ORIGINS "https://your-app.netlify.app"
-```
+#### Netlify
 
-Limitation: emails and magic links always point at `SITE_URL`. For full per-host isolation, run a separate Convex deployment per host instead.
+Import in the [Netlify dashboard](https://app.netlify.com/start), paste the env vars above (Production context). `netlify.toml` ships build command, publish dir, and pins `BUN_VERSION=1.3.13`. Push to `main`, Netlify deploys.
 
-### Vercel
+#### Cloudflare Workers
 
-Import the repo in the [Vercel dashboard](https://vercel.com/new), then push your env vars. Production points at prod Convex; Preview and Development point at dev Convex (PR previews use dev data, not real users).
+Connect in the [Cloudflare dashboard](https://dash.cloudflare.com): **Workers & Pages → Create → Workers → Connect to Git**. Set the env vars under **Settings → Builds → Variables and secrets** (NOT runtime bindings — Vite bakes them into the bundle at build time). Push to `main`, Workers Builds deploys.
 
-```bash
-# Production = prod Convex
-vercel env add CONVEX_DEPLOYMENT  production --value "prod:your-prod-project" --yes
-vercel env add VITE_CONVEX_URL    production --value "https://your-prod-project.convex.cloud" --yes
-vercel env add VITE_CONVEX_SITE_URL production --value "https://your-prod-project.convex.site" --yes
-vercel env add SITE_URL           production --value "https://your-app.vercel.app" --yes
-vercel env add VITE_SITE_URL      production --value "https://your-app.vercel.app" --yes
-vercel env add BUN_VERSION        production --value "1.3.13" --yes
+Don't create a Pages project — it reserves the `ASSETS` binding name Nitro's modern preset uses.
 
-# Preview = dev Convex (repeat with --target preview)
-# Development = dev Convex + localhost SITE_URL (repeat with --target development)
-```
+#### Other platforms
 
-The shipped `vercel.json` pins bun to 1.3.13 via `installCommand`. Vercel's preinstalled bun lags and resolves TanStack's nested `zod@3` incorrectly without it. The `BUN_VERSION` env var isn't honored by their bun integration as of CLI 53.1.1, so the install-command pin is the working path.
-
-### Netlify
-
-```bash
-netlify login
-netlify link                                              # connect to your site
-# Production
-netlify env:set VITE_CONVEX_URL    "https://your-prod-project.convex.cloud" --context production
-netlify env:set VITE_CONVEX_SITE_URL "https://your-prod-project.convex.site" --context production
-netlify env:set CONVEX_DEPLOYMENT  "prod:your-prod-project" --context production
-netlify env:set SITE_URL           "https://your-app.netlify.app" --context production
-netlify env:set VITE_SITE_URL      "https://your-app.netlify.app" --context production
-# Deploy preview = dev Convex (--context deploy-preview), branch = same (--context branch-deploy)
-```
-
-The shipped `netlify.toml` declares build command (`bun run build`), publish dir (`dist`, where Nitro emits client assets), the SSR functions dir (`.netlify/functions-internal`), and pins `BUN_VERSION=1.3.13` so the build environment matches the local lockfile.
-
-### Cloudflare Workers
-
-Cloudflare recommends Workers + Static Assets for new projects. Pages reached feature parity in 2026 and was effectively superseded.
-
-Connect via the [Cloudflare dashboard](https://dash.cloudflare.com): **Workers & Pages → Create → Workers → Connect to Git → tanvex**. Workers Builds reads `[build] command = "bun run build"` from the shipped `wrangler.toml`, builds via Nitro's `cloudflare-module` preset, and deploys.
-
-**Env vars must be set as BUILD-time vars, not runtime bindings.** Vite's `define` block in `vite.config.ts` substitutes `process.env.VITE_CONVEX_URL` and friends into the JS bundle at build time — the values are constants by the time the Worker runs. Runtime `[vars]` in `wrangler.toml` (or **Settings → Bindings**) can't reach them.
-
-In the Cloudflare dashboard: **Workers & Pages → tanvex → Settings → Builds → Variables and secrets → Add**. Set:
-
-- `CONVEX_DEPLOYMENT` = `prod:your-project`
-- `VITE_CONVEX_URL` = `https://your-project.convex.cloud`
-- `VITE_CONVEX_SITE_URL` = `https://your-project.convex.site`
-- `SITE_URL` = `https://your-worker.your-subdomain.workers.dev` (or your custom domain)
-- `VITE_SITE_URL` = same as `SITE_URL`
-
-After saving, push any commit to trigger a rebuild. Workers Builds picks up the new build env and the bundle is built with the right values inlined.
-
-For dev/prod separation, Cloudflare doesn't have a built-in context split. Either use two separate Workers (`tanvex-prod` and `tanvex-dev`, switching `name` in `wrangler.toml`) or use Wrangler `--env` blocks.
-
-The shipped `wrangler.toml` declares `compatibility_date`, `nodejs_compat`, and the build command. Nitro auto-generates the rest of the deploy config (`.output/server/wrangler.json`) at build time and registers it via `.wrangler/deploy/config.json`.
-
-Don't create a Pages project for new deploys. Pages reserves the `ASSETS` binding name that Nitro's modern preset uses, causing deploys to fail.
-
-### Other platforms
-
-Anywhere Nitro runs: Node, Bun, AWS Lambda, Deno Deploy, etc. Set `NITRO_PRESET` in your build env (e.g. `NITRO_PRESET=node-server`) and run `bun run build`. Output lands in `.output/`.
+Anywhere Nitro runs (Node, Bun, AWS Lambda, Deno Deploy, etc.): set `NITRO_PRESET` (e.g. `node-server`), run `bun run build`, output lands in `.output/`.
 
 ## Project structure
 
