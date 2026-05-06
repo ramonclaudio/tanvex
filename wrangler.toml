@@ -4,17 +4,17 @@ compatibility_flags = ["nodejs_compat"]
 
 # Workers Builds reads `build.command` and runs it after install. Bun version
 # is detected from `bun.lock`. Override with the `BUN_VERSION` env var on the
-# Cloudflare Worker if you need a specific bun (set via dashboard or
-# `bunx wrangler secret put BUN_VERSION`).
+# Cloudflare Worker if you need a specific bun.
 [build]
 command = "bun run build"
 
-# Public env vars baked into the Worker. Update these for your own deploy.
-# Backend secrets (BETTER_AUTH_SECRET, RESEND_API_KEY, etc.) live on the
-# Convex deployment, not here. See `.env.convex.example`.
-[vars]
-CONVEX_DEPLOYMENT = "prod:reminiscent-woodpecker-169"
-VITE_CONVEX_URL = "https://reminiscent-woodpecker-169.convex.cloud"
-VITE_CONVEX_SITE_URL = "https://reminiscent-woodpecker-169.convex.site"
-SITE_URL = "https://tanvex.hello-8fa.workers.dev"
-VITE_SITE_URL = "https://tanvex.hello-8fa.workers.dev"
+# Env vars: this Vite-built app reads `process.env.X` at BUILD time (via Vite's
+# `define` block in `vite.config.ts`), not at request time. Set them as
+# build-time env vars in the Cloudflare dashboard:
+#   Workers & Pages -> tanvex -> Settings -> Builds -> Variables and secrets
+# Required: CONVEX_DEPLOYMENT, VITE_CONVEX_URL, VITE_CONVEX_SITE_URL,
+# SITE_URL, VITE_SITE_URL. Backend secrets (BETTER_AUTH_SECRET, RESEND_*)
+# live on the Convex deployment, see `.env.convex.example`.
+#
+# Don't add a `[vars]` block here for these — runtime bindings can't reach
+# values that Vite has already inlined into the bundle.

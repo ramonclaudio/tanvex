@@ -281,23 +281,23 @@ The shipped `netlify.toml` declares build command (`bun run build`), publish dir
 
 Cloudflare recommends Workers + Static Assets for new projects. Pages reached feature parity in 2026 and was effectively superseded.
 
-```bash
-bunx wrangler login
-bunx wrangler deploy   # builds and deploys, uses Nitro-generated wrangler.json
-```
+Connect via the [Cloudflare dashboard](https://dash.cloudflare.com): **Workers & Pages → Create → Workers → Connect to Git → tanvex**. Workers Builds reads `[build] command = "bun run build"` from the shipped `wrangler.toml`, builds via Nitro's `cloudflare-module` preset, and deploys.
 
-For env vars, Cloudflare doesn't have a built-in dev/prod context split. Either use two separate Workers (`tanvex-prod` and `tanvex-dev`, switching via `name` in `wrangler.toml`) or use Wrangler `--env` blocks. For each Worker, set vars:
+**Env vars must be set as BUILD-time vars, not runtime bindings.** Vite's `define` block in `vite.config.ts` substitutes `process.env.VITE_CONVEX_URL` and friends into the JS bundle at build time — the values are constants by the time the Worker runs. Runtime `[vars]` in `wrangler.toml` (or **Settings → Bindings**) can't reach them.
 
-```bash
-# Non-secret vars go in wrangler.toml [vars] block:
-#   [vars]
-#   VITE_CONVEX_URL = "https://your-project.convex.cloud"
-#
-# Secrets via wrangler:
-echo "your-secret-value" | bunx wrangler secret put SECRET_NAME
-```
+In the Cloudflare dashboard: **Workers & Pages → tanvex → Settings → Builds → Variables and secrets → Add**. Set:
 
-The shipped `wrangler.toml` declares `compatibility_date` and `nodejs_compat`. Nitro auto-generates the rest of the deploy config (`.output/server/wrangler.json`) at build time and registers it via `.wrangler/deploy/config.json`.
+- `CONVEX_DEPLOYMENT` = `prod:your-project`
+- `VITE_CONVEX_URL` = `https://your-project.convex.cloud`
+- `VITE_CONVEX_SITE_URL` = `https://your-project.convex.site`
+- `SITE_URL` = `https://your-worker.your-subdomain.workers.dev` (or your custom domain)
+- `VITE_SITE_URL` = same as `SITE_URL`
+
+After saving, push any commit to trigger a rebuild. Workers Builds picks up the new build env and the bundle is built with the right values inlined.
+
+For dev/prod separation, Cloudflare doesn't have a built-in context split. Either use two separate Workers (`tanvex-prod` and `tanvex-dev`, switching `name` in `wrangler.toml`) or use Wrangler `--env` blocks.
+
+The shipped `wrangler.toml` declares `compatibility_date`, `nodejs_compat`, and the build command. Nitro auto-generates the rest of the deploy config (`.output/server/wrangler.json`) at build time and registers it via `.wrangler/deploy/config.json`.
 
 Don't create a Pages project for new deploys. Pages reserves the `ASSETS` binding name that Nitro's modern preset uses, causing deploys to fail.
 
