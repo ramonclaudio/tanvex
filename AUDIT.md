@@ -405,30 +405,45 @@ A clean `bun install` fixed it. Not a repo bug.
   documented in their headers. Setup resets a possibly-broken tree from scratch. Clean
   is the recoverable reset.
 
-## Phase 3: verification (planned)
+## Phase 3: verification
 
-Target state: five gates green locally and from a clean clone with both npm and bun,
-compared against the Phase 1 baseline above.
+Convex function tests live in `convex/users.test.ts` and `convex/rateLimit.test.ts`
+(convex-test, `edge-runtime` environment per file, no live backend), with the harness in
+`convex/test.helpers.ts`. All three components (`better-auth`, `rate-limiter`, `resend`)
+register through their official `/test` entry points, and `seedAuthedUser` creates a real
+Better Auth user + session through the component adapter, fires the real
+`internal.auth.onCreate` trigger, and authenticates via the same identity claims
+(`subject`, `sessionId`) the convex plugin puts in the JWT. Nothing is mocked.
 
-Convex function tests to add under `convex/*.test.ts` (convex-test, `edge-runtime`
-environment per file, no live backend):
+Covered (25 tests passing, 4 files):
 
-- auth enforcement on the wrappers: `authQuery` and `authMutation` reject
-  unauthenticated callers, `optionalAuthQuery` passes an undefined user
-- profile mutations: bio validation (accept up to 500, reject over 500, clear on empty),
-  avatar storage-id handling (existence check, old-blob deletion)
-- rate-limit consumption: the `userAction` bucket exhausts and throws, and
-  `checkApiRateLimit` returns an absolute `retryAt`
+- wrapper enforcement: `authMutation` throws `AUTH_1001` unauthenticated,
+  `optionalAuthQuery` returns null, an identity without a live session is rejected,
+  and the authenticated path merges Better Auth identity with the app users row.
+  `authQuery` itself has no registered function in the template; its enforcement body
+  (`requireAuthenticatedUser`) is exactly what `authMutation` exercises.
+- profile mutations: bio at/over the 500 limit (`VAL_3001` with `field: "bio"`),
+  omitted bio clears the field, avatar upload stores and resolves, replacing an avatar
+  deletes the old blob, dangling storage ids are rejected (N1 regression),
+  `deleteAvatar` frees the blob.
+- rate limits: `userAction` exhausts after its burst capacity and throws
+  `kind: RateLimited`, keys are per user, `checkApiRateLimit` denies after the
+  `apiRead` capacity and returns an absolute future `retryAt` (S6 regression), keys are
+  independent.
 
 ### Known testing gap
 
-To be confirmed during Phase 3: the Better Auth component backs
-`safeGetAuthenticatedUser` via component calls that need the component's own tables and
-runtime. If registering it under convex-test proves infeasible without a live
-deployment, the wrapper tests will drive whatever surface is reachable and this section
-will record exactly what is not covered. OTP delivery, session cookies, and the SSR
-token flow need a real deployment plus Resend and are out of scope per the audit brief
-(no cloud resources provisioned).
+HTTP-level auth (the Better Auth routes mounted by `registerRoutesLazy`, OTP issuance
+and delivery through Resend, session cookies, and the SSR token exchange in
+`src/lib/auth-server.ts`) requires a live Convex deployment plus a Resend key and is not
+covered here, per the audit brief (no cloud resources provisioned). The Convex-side
+enforcement those flows land on is what the tests above cover.
+
+### Gate results after all fixes (this session)
+
+Local tree (bun-installed): typecheck, lint (0 warnings, 0 errors), fmt:check, test
+(4 files, 25 tests), build — all pass. Clean-clone verification for npm and bun is
+recorded in Phase 4 below.
 
 ## Phase 4: README execution check (planned)
 

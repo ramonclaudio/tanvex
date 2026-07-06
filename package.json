@@ -88,6 +88,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
     "@tailwindcss/vite": "^4.2.4",
     "@tanstack/devtools-vite": "^0.6.0",
     "@tanstack/react-devtools": "^0.10.2",
@@ -100,6 +101,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "concurrently": "^9.2.1",
+    "convex-test": "^0.0.54",
     "jsdom": "^29.1.1",
     "nitro": "^3.0.260429-beta",
     "oxfmt": "0.48.0",

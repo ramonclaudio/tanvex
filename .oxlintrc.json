@@ -65,6 +65,12 @@
       "rules": {
         "react/no-children-prop": "off"
       }
+    },
+    {
+      "files": ["convex/**/*.test.ts", "convex/test.helpers.ts"],
+      "rules": {
+        "typescript/no-unsafe-type-assertion": "off"
+      }
     }
   ]
 }
