@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Skeleton } from "@/components/ui/skeleton"
 import { authClient } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 
@@ -27,7 +28,7 @@ export function UserMenu() {
   const { isLoading, isAuthenticated } = useConvexAuth()
 
   if (isAuthenticated) return <AuthedMenu />
-  if (isLoading) return <div className="size-9 animate-pulse rounded-full bg-muted" aria-hidden />
+  if (isLoading) return <Skeleton className="size-9 rounded-full" aria-hidden />
   return <SignInLink />
 }
 

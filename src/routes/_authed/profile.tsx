@@ -33,6 +33,8 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { authClient } from "@/lib/auth-client"
 import { fetchAuthQuery } from "@/lib/auth-server"
@@ -93,17 +95,17 @@ function ProfilePage() {
 
 function ProfileSkeleton() {
   return (
-    <div className="animate-pulse space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <div className="size-20 rounded-full bg-muted" />
+        <Skeleton className="size-20 rounded-full" />
         <div className="space-y-2">
-          <div className="h-6 w-32 rounded bg-muted" />
-          <div className="h-4 w-48 rounded bg-muted" />
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-4 w-48" />
         </div>
       </div>
       <div className="space-y-4">
-        <div className="h-10 rounded-2xl bg-muted" />
-        <div className="h-24 rounded-2xl bg-muted" />
+        <Skeleton className="h-10" />
+        <Skeleton className="h-24" />
       </div>
     </div>
   )
@@ -587,11 +589,7 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
                   formData.username.toLowerCase() !== originalUsername.toLowerCase() ? (
                     <div className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2">
                       {isCheckingUsername ? (
-                        <HugeiconsIcon
-                          icon={Loading03Icon}
-                          strokeWidth={2}
-                          className="size-3.5 animate-spin text-muted-foreground"
-                        />
+                        <Spinner className="size-3.5 text-muted-foreground" />
                       ) : usernameAvailable === true ? (
                         <HugeiconsIcon
                           icon={Tick02Icon}

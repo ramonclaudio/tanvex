@@ -8,7 +8,6 @@ import {
 } from "@convex/constants"
 import Camera01Icon from "@hugeicons/core-free-icons/Camera01Icon"
 import Cancel01Icon from "@hugeicons/core-free-icons/Cancel01Icon"
-import Loading03Icon from "@hugeicons/core-free-icons/Loading03Icon"
 import Tick02Icon from "@hugeicons/core-free-icons/Tick02Icon"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { useForm } from "@tanstack/react-form"
@@ -30,6 +29,7 @@ import {
   FieldSet,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
 import { seo } from "@/lib/seo"
 import { SITE_NAME, SITE_URL } from "@/lib/site"
@@ -174,19 +174,13 @@ function SignInPage() {
         {phase.kind !== "default" ? (
           <OTPFlows phase={phase} setPhase={setPhase} resetToSignIn={resetToDefault} />
         ) : isAuthenticated ? (
-          <Spinner />
+          <div className="flex justify-center pt-8">
+            <Spinner className="size-6" />
+          </div>
         ) : (
           <UnauthedView setPhase={setPhase} />
         )}
       </div>
-    </div>
-  )
-}
-
-function Spinner() {
-  return (
-    <div className="flex justify-center pt-8">
-      <HugeiconsIcon icon={Loading03Icon} strokeWidth={2} className="size-6 animate-spin" />
     </div>
   )
 }
@@ -519,11 +513,7 @@ function UnauthedView({ setPhase }: { setPhase: (phase: AuthPhase) => void }) {
                         {showAvailability ? (
                           <div className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2">
                             {isCheckingUsername ? (
-                              <HugeiconsIcon
-                                icon={Loading03Icon}
-                                strokeWidth={2}
-                                className="size-4 animate-spin text-muted-foreground"
-                              />
+                              <Spinner className="size-4 text-muted-foreground" />
                             ) : usernameAvailable === true ? (
                               <HugeiconsIcon
                                 icon={Tick02Icon}
