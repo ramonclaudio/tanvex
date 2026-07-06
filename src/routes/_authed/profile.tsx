@@ -2,6 +2,8 @@ import { api } from "@convex/_generated/api"
 import type { AuthUser } from "@convex/auth"
 import {
   BIO_MAX_LENGTH,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
   USERNAME_MIN_LENGTH,
   isReservedUsername,
   isValidUsernameFormat,
@@ -381,10 +383,10 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
     if (!passwordForm.currentPassword) next.currentPassword = "Current password is required"
     if (!passwordForm.newPassword) {
       next.newPassword = "New password is required"
-    } else if (passwordForm.newPassword.length < 8) {
-      next.newPassword = "Password must be at least 8 characters"
-    } else if (passwordForm.newPassword.length > 128) {
-      next.newPassword = "Password must be 128 characters or less"
+    } else if (passwordForm.newPassword.length < PASSWORD_MIN_LENGTH) {
+      next.newPassword = `Password must be at least ${PASSWORD_MIN_LENGTH} characters`
+    } else if (passwordForm.newPassword.length > PASSWORD_MAX_LENGTH) {
+      next.newPassword = `Password must be ${PASSWORD_MAX_LENGTH} characters or less`
     } else if (passwordForm.newPassword === passwordForm.currentPassword) {
       next.newPassword = "New password must be different from the current password"
     }

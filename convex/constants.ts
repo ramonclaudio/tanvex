@@ -9,6 +9,14 @@
 export const BIO_MAX_LENGTH = 500
 
 // ============================================================================
+// Passwords (Better Auth `emailAndPassword`)
+// ============================================================================
+
+// Declared on the server in convex/auth.ts and mirrored by the client forms.
+export const PASSWORD_MIN_LENGTH = 8
+export const PASSWORD_MAX_LENGTH = 128
+
+// ============================================================================
 // Username validation (Better Auth `username` plugin)
 // ============================================================================
 

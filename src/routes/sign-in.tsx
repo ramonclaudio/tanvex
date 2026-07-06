@@ -2,6 +2,7 @@ import { api } from "@convex/_generated/api"
 import {
   isReservedUsername,
   isValidUsernameFormat,
+  PASSWORD_MIN_LENGTH,
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
 } from "@convex/constants"
@@ -36,14 +37,18 @@ import { cn } from "@/lib/utils"
 
 const signInEmailSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
+  password: z
+    .string()
+    .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`),
 })
 
 const signInUsernameSchema = z.object({
   username: z
     .string()
     .min(USERNAME_MIN_LENGTH, `Username must be at least ${USERNAME_MIN_LENGTH} characters.`),
-  password: z.string().min(8, "Password must be at least 8 characters."),
+  password: z
+    .string()
+    .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`),
 })
 
 const emailOnlySchema = z.object({
@@ -56,7 +61,9 @@ const otpSchema = z.object({
 
 const resetPasswordSchema = z.object({
   otp: z.string().regex(/^\d{6}$/, "Enter the 6-digit code from your email."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
+  password: z
+    .string()
+    .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`),
 })
 
 const signUpSchema = z.object({
@@ -72,7 +79,9 @@ const signUpSchema = z.object({
       "This username is reserved and cannot be used.",
     ),
   email: z.string().email("Please enter a valid email address."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
+  password: z
+    .string()
+    .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`),
 })
 
 type AuthSearchParams = { redirect?: string }
@@ -745,7 +754,9 @@ function UnauthedView({ setPhase }: { setPhase: (phase: AuthPhase) => void }) {
                         placeholder="••••••••"
                         autoComplete="new-password"
                       />
-                      <FieldDescription>At least 8 characters.</FieldDescription>
+                      <FieldDescription>
+                        At least {PASSWORD_MIN_LENGTH} characters.
+                      </FieldDescription>
                       {invalid ? <FieldError errors={field.state.meta.errors} /> : null}
                       {serverError ? <FieldError>{serverError}</FieldError> : null}
                     </Field>
@@ -996,7 +1007,7 @@ function OTPFlows({
                       placeholder="••••••••"
                       autoComplete="new-password"
                     />
-                    <FieldDescription>At least 8 characters.</FieldDescription>
+                    <FieldDescription>At least {PASSWORD_MIN_LENGTH} characters.</FieldDescription>
                     {invalid ? <FieldError errors={field.state.meta.errors} /> : null}
                     {serverError ? <FieldError>{serverError}</FieldError> : null}
                     {info ? <FieldDescription>{info}</FieldDescription> : null}

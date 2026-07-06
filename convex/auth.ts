@@ -12,6 +12,8 @@ import { internalAction, query } from "./_generated/server"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import authConfig from "./auth.config"
 import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
   USERNAME_FORMAT_REGEX,
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
@@ -98,6 +100,10 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
       // Require a verified email before password sign-in is allowed.
       // Verification uses the emailOTP plugin below (overrideDefaultEmailVerification).
       requireEmailVerification: true,
+      // Explicit bounds so the client mirrors (sign-in and profile forms)
+      // can't outrun the server's actual policy.
+      minPasswordLength: PASSWORD_MIN_LENGTH,
+      maxPasswordLength: PASSWORD_MAX_LENGTH,
     },
     emailVerification: {
       // When `emailOtp.verifyEmail` (or the link-based verify endpoint)
@@ -148,6 +154,10 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
       emailOTP({
         overrideDefaultEmailVerification: true,
         sendVerificationOnSignUp: true,
+        // Explicit so the "expires in 5 minutes" copy in convex/email.ts and
+        // the 6-digit inputs in the sign-in forms can't drift from defaults.
+        otpLength: 6,
+        expiresIn: 60 * 5,
         // OTP sign-in must not mint accounts for unknown emails (they'd get
         // name: "" and skip the sign-up flow). Unknown emails get a silent
         // no-send success, which also prevents email enumeration.
