@@ -58,7 +58,24 @@ http.route({
   path: "/resend-webhook",
   method: "POST",
   handler: httpAction(async (ctx, req) => {
-    return await resend.handleResendEventWebhook(ctx, req)
+    // Without the secret the component throws during signature verification
+    // and Convex serializes the error (module paths included) to the caller.
+    // Refuse cleanly so a half-configured deploy never leaks internals.
+    if (!process.env.RESEND_WEBHOOK_SECRET) {
+      return new Response(JSON.stringify({ error: "Webhook not configured" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      })
+    }
+    try {
+      return await resend.handleResendEventWebhook(ctx, req)
+    } catch (err) {
+      console.error("[resend-webhook] event handling failed", err)
+      return new Response(JSON.stringify({ error: "Webhook processing failed" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      })
+    }
   }),
 })
 
