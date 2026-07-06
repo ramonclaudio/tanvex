@@ -240,8 +240,9 @@ A clean `bun install` fixed it. Not a repo bug.
   `ImportMetaEnv`, but those flow through `process.env` via the vite.config `define`
   block (`auth-server.ts` reads `process.env.VITE_CONVEX_SITE_URL`). False type safety:
   `import.meta.env.SITE_URL` typechecks and is undefined at runtime.
-- Fix: keep only `VITE_SITE_URL` and `VITE_CONVEX_URL` on `ImportMetaEnv`.
-- Status: open
+- Fix: keep only the `VITE_`-prefixed vars on `ImportMetaEnv` (Vite auto-exposes those
+  three). `CONVEX_DEPLOYMENT` and `SITE_URL` never exist there.
+- Status: fixed, with a comment pointing at the define block for the server-side vars.
 
 ### S17. Canonical URL and `og:url` claim every page is the homepage
 
