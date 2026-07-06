@@ -17,6 +17,17 @@ export const resend: Resend = new Resend(components.resend, {
   onEmailEvent: internal.email.handleEmailEvent,
 })
 
+// Sign-in requires a verified email and verification arrives via Resend, so
+// test mode (the component default; `npm run setup` turns it off) silently
+// drops every OTP to a non-@resend.dev address: sign-up looks fine and no
+// mail ever lands. Shout in the deploy log until it's configured.
+if (process.env.RESEND_TEST_MODE !== "false") {
+  console.error(
+    "[email] RESEND_TEST_MODE is on: OTPs only deliver to @resend.dev test addresses. " +
+      "Set RESEND_TEST_MODE=false on this deployment once your Resend key is configured.",
+  )
+}
+
 /**
  * Receives delivery events from the Resend webhook (mounted in convex/http.ts).
  * The event payload is also automatically persisted to the component's
@@ -72,6 +83,9 @@ export async function sendAuthOTP(
 ) {
   const app = process.env.APP_NAME ?? "App"
   const from = process.env.EMAIL_FROM ?? "Auth <onboarding@resend.dev>"
+  if (!process.env.EMAIL_FROM) {
+    console.warn("[email] EMAIL_FROM is unset, sending from Resend's sandbox sender")
+  }
   const { subject, heading, body } = OTP_COPY[type]
   await resend.sendEmail(requireRunMutationCtx(ctx), {
     from,
