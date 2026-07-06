@@ -195,6 +195,11 @@ function UnauthedView({ setPhase }: { setPhase: (phase: AuthPhase) => void }) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
+  // Holds the candidate the in-flight availability request is for. Responses
+  // resolving for anything else are dropped, so a slow response for an old
+  // keystroke can't overwrite the verdict for the current one.
+  const pendingUsernameRef = useRef<string | null>(null)
+
   const checkUsernameAvailability = useCallback(async (username: string) => {
     if (!username || !isValidUsernameFormat(username)) {
       setUsernameAvailable(null)
@@ -205,19 +210,28 @@ function UnauthedView({ setPhase }: { setPhase: (phase: AuthPhase) => void }) {
       return
     }
     setIsCheckingUsername(true)
+    pendingUsernameRef.current = username
     try {
       const result = await authClient.isUsernameAvailable({ username })
+      if (pendingUsernameRef.current !== username) return
       if (result.data) setUsernameAvailable(result.data.available)
     } catch {
+      if (pendingUsernameRef.current !== username) return
       setUsernameAvailable(null)
     } finally {
-      setIsCheckingUsername(false)
+      if (pendingUsernameRef.current === username) {
+        pendingUsernameRef.current = null
+        setIsCheckingUsername(false)
+      }
     }
   }, [])
 
   const handleUsernameChange = useCallback(
     (username: string) => {
       setUsernameAvailable(null)
+      // Invalidate any in-flight check; its finally no longer owns the spinner.
+      pendingUsernameRef.current = null
+      setIsCheckingUsername(false)
       if (usernameCheckTimeoutRef.current) clearTimeout(usernameCheckTimeoutRef.current)
       if (username && isValidUsernameFormat(username)) {
         if (isReservedUsername(username)) {

@@ -124,6 +124,10 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
   const [usernameError, setUsernameError] = useState<string | null>(null)
   const usernameCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  // Holds the candidate the in-flight availability request is for. Responses
+  // resolving for anything else are dropped, so a slow response for an old
+  // keystroke can't overwrite the verdict for the current one.
+  const pendingUsernameRef = useRef<string | null>(null)
 
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [isSavingPassword, setIsSavingPassword] = useState(false)
@@ -193,17 +197,23 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
       }
       setIsCheckingUsername(true)
       setUsernameError(null)
+      pendingUsernameRef.current = username
       try {
         const result = await authClient.isUsernameAvailable({ username })
+        if (pendingUsernameRef.current !== username) return
         if (result.data) {
           setUsernameAvailable(result.data.available)
           if (!result.data.available) setUsernameError("This username is already taken")
         }
       } catch {
+        if (pendingUsernameRef.current !== username) return
         setUsernameAvailable(null)
         setUsernameError(null)
       } finally {
-        setIsCheckingUsername(false)
+        if (pendingUsernameRef.current === username) {
+          pendingUsernameRef.current = null
+          setIsCheckingUsername(false)
+        }
       }
     },
     [originalUsername],
@@ -214,6 +224,9 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
       setFormData((prev) => ({ ...prev, username }))
       setUsernameAvailable(null)
       setUsernameError(null)
+      // Invalidate any in-flight check; its finally no longer owns the spinner.
+      pendingUsernameRef.current = null
+      setIsCheckingUsername(false)
       if (usernameCheckTimeoutRef.current) clearTimeout(usernameCheckTimeoutRef.current)
       if (username.toLowerCase() === originalUsername.toLowerCase()) return
       if (!username) return
