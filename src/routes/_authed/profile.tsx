@@ -62,14 +62,13 @@ function ProfilePage() {
   const { isAuthenticated, isLoading } = useConvexAuth()
   const navigate = useNavigate()
 
-  // UPSTREAM(convex-better-auth#isloading-latch): gate on `isAuthenticated`
-  // (which stays stable through Better Auth's isPending spikes on session
-  // refetch) instead of `isLoading` (which flips true on every refetch and
-  // would otherwise unmount ProfileContent mid-edit). The `preloadedUser &&
-  // isLoading` branch covers the SSR hydration window before the client-side
-  // session resolves. In-session sign-out or expiry flips isAuthenticated
-  // false; the `_authed` beforeLoad only runs on navigation, so fall back
-  // to a client-side redirect. Revisit once the latch ships upstream.
+  // Gate content on `isAuthenticated` so ProfileContent never unmounts
+  // mid-edit; the bridge in src/lib/convex-auth.tsx keeps it stable across
+  // session refetches. The `preloadedUser && isLoading` branch covers the
+  // SSR hydration window before the client-side session resolves.
+  // In-session sign-out or expiry flips isAuthenticated false; the `_authed`
+  // beforeLoad only runs on navigation, so fall back to a client-side
+  // redirect.
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       void navigate({ to: "/sign-in", search: { redirect: "/profile" } })

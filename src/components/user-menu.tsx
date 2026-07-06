@@ -19,10 +19,10 @@ import { authClient } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 
 export function UserMenu() {
-  // UPSTREAM(convex-better-auth#isloading-latch): gate on `isAuthenticated`,
-  // which stays stable through Better Auth's session refetch on window focus.
-  // Auth boundary components key on `isLoading` and would unmount the menu
-  // into a skeleton on every refetch. See the DESIGN.md Do on auth gating.
+  // Explicit useConvexAuth conditional, the house pattern for auth-gated
+  // content (see the DESIGN.md Do on auth gating). The bridge in
+  // src/lib/convex-auth.tsx keeps these values stable across session
+  // refetches, so the menu never flashes to a skeleton on window focus.
   const { isLoading, isAuthenticated } = useConvexAuth()
 
   if (isAuthenticated) return <AuthedMenu />

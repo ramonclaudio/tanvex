@@ -108,8 +108,8 @@ const highlights = [
 ]
 
 function Home() {
-  // UPSTREAM(convex-better-auth#isloading-latch): explicit conditional instead
-  // of <Authenticated>/<Unauthenticated>, per the DESIGN.md Do on auth gating.
+  // Explicit conditional instead of <Authenticated>/<Unauthenticated>, per
+  // the DESIGN.md Do on auth gating.
   const { isAuthenticated } = useConvexAuth()
   const [copied, setCopied] = useState(false)
 

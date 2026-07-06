@@ -381,7 +381,7 @@ Components that aren't shadcn primitives — these encode our specific decisions
 
 **Do** use the existing primitives in `src/components/ui/` before reaching for raw Tailwind. They encode the system; ad-hoc class compositions drift from it.
 
-**Do** use `useConvexAuth` plus an explicit conditional for auth-gated content rather than `<Authenticated>` / `<Unauthenticated>` boundaries, until the upstream `isLoading` latch ships. Tagged `UPSTREAM(convex-better-auth#isloading-latch)` in the source.
+**Do** use `useConvexAuth` plus an explicit conditional for auth-gated content rather than `<Authenticated>` / `<Unauthenticated>` boundaries. The conditional keeps loading fallbacks in the component's hands, and content that must survive a session refetch (forms mid-edit) gates on `isAuthenticated`, which the bridge in `src/lib/convex-auth.tsx` keeps stable.
 
 **Do** match icon size to context: `size-3.5` for inline chrome chips, `size-4` for menu items and inline buttons, `size-5` for medium controls, `size-6` for header / loading states.
 

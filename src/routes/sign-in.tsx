@@ -155,13 +155,10 @@ function SignInPage() {
 
   const resetToDefault = useCallback(() => setPhase({ kind: "default" }), [])
 
-  // UPSTREAM(convex-better-auth#isloading-latch): render the form above the
-  // auth boundaries. Better Auth refetches /get-session on window focus and
-  // right after signUp.email resolves; that refetch flips Convex's isLoading
-  // true while data is still null. If the form lived under <Unauthenticated>,
-  // the boundary would unmount it on every refetch and drop the user's input,
-  // or swap them back onto the sign-in form mid sign-up flow. Revisit once
-  // the latch ships upstream.
+  // The phase machine, not an auth boundary, owns which form renders. If the
+  // forms lived under <Unauthenticated>, the auth flip during sign-up (OTP
+  // verify mints a session mid-flow) would unmount them and drop the user's
+  // input. Auth state only decides the fallback branch below.
   return (
     <div className="mx-auto min-h-[calc(100vh-4rem)] w-full max-w-5xl px-6 py-16 sm:py-24">
       <div className="mx-auto flex w-full max-w-sm flex-col gap-6">
