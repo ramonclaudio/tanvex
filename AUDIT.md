@@ -339,7 +339,7 @@ A clean `bun install` fixed it. Not a repo bug.
 
 - File: `src/routes/sign-in.tsx:832-833`. `setInfo(...)` then `resetToSignIn()` swaps
   the phase, so "Password updated. Sign in with your new password." never renders.
-  Fix: move the confirmation to a toast (Sonner is already mounted). Status: open.
+  Fix: move the confirmation to a toast (Sonner is already mounted). Status: fixed.
 
 ### N6. Header icons off the size ladder
 

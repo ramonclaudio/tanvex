@@ -14,6 +14,7 @@ import { useForm } from "@tanstack/react-form"
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 import { useConvexAuth, useMutation } from "convex/react"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
 import { z } from "zod"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -845,7 +846,8 @@ function OTPFlows({
           setServerError(result.error.message || "Reset failed")
           return
         }
-        setInfo("Password updated. Sign in with your new password.")
+        // Toast, not local state: resetToSignIn unmounts this form immediately.
+        toast.success("Password updated. Sign in with your new password.")
         resetToSignIn()
       } catch {
         setServerError("An error occurred. Please try again.")
