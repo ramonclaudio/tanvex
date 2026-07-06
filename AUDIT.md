@@ -110,7 +110,8 @@ A clean `bun install` fixed it. Not a repo bug.
   `args.name as RateLimitName` cast is also dead weight.
 - Fix: delete both buckets, narrow the args union to the names actually passed, drop the
   cast.
-- Status: open
+- Status: fixed. Two buckets remain (`apiRead`, `userAction`), both consumed, union and
+  type now match exactly and the cast is gone.
 
 ### S6. `checkApiRateLimit` returns a duration as an absolute time
 

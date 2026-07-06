@@ -8,7 +8,6 @@ import { authComponent, createAuth } from "./auth"
 import { resend } from "./email"
 import { getAllowedOrigins } from "./origins"
 import { consumeLimit } from "./rateLimit"
-import type { RateLimitName } from "./rateLimit"
 
 // ============================================================================
 // Internal mutation for HTTP rate limiting
@@ -25,14 +24,14 @@ import type { RateLimitName } from "./rateLimit"
 export const checkApiRateLimit = internalMutation({
   args: {
     key: v.string(),
-    name: v.union(v.literal("apiRead"), v.literal("apiWrite"), v.literal("userAction")),
+    name: v.union(v.literal("apiRead"), v.literal("userAction")),
   },
   returns: v.object({
     ok: v.boolean(),
     retryAt: v.number(),
   }),
   handler: async (ctx, args) => {
-    const result = await consumeLimit(ctx, args.name as RateLimitName, args.key)
+    const result = await consumeLimit(ctx, args.name, args.key)
     return {
       ok: result.ok,
       retryAt: result.retryAfter ?? Date.now(),

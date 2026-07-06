@@ -19,7 +19,7 @@ import type { MutationCtx } from "./_generated/server"
  * Defines all application rate limits in one place.
  */
 export const rateLimiter = new RateLimiter(components.rateLimiter, {
-  // Read operations: permissive for good UX, sharded for throughput
+  // Anonymous reads on the public HTTP API, keyed by client IP. Sharded for throughput.
   apiRead: {
     kind: "token bucket",
     rate: 100,
@@ -28,33 +28,16 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
     shards: 2,
   },
 
-  // Write operations: stricter to prevent abuse
-  apiWrite: {
-    kind: "token bucket",
-    rate: 30,
-    period: MINUTE,
-    capacity: 10,
-  },
-
-  // General authenticated user actions
+  // Authenticated user actions (profile and avatar mutations), keyed by user id.
   userAction: {
     kind: "token bucket",
     rate: 60,
     period: MINUTE,
     capacity: 10,
   },
-
-  // For operations that MUST eventually succeed (use with reserve: true)
-  criticalAction: {
-    kind: "token bucket",
-    rate: 10,
-    period: MINUTE,
-    capacity: 5,
-    maxReserved: 20,
-  },
 })
 
-export type RateLimitName = "apiRead" | "apiWrite" | "userAction" | "criticalAction"
+export type RateLimitName = "apiRead" | "userAction"
 
 /**
  * Apply a rate limit and throw automatically if exceeded.
