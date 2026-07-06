@@ -250,7 +250,8 @@ A clean `bun install` fixed it. Not a repo bug.
 - Problem: the root route hardcodes `rel=canonical` to `SITE_URL` and calls `seo()` with
   no `url`, and no child route overrides either. `/sign-in` canonicalizes to `/`.
 - Fix: per-route `head` with `seo({ url })` and a canonical link on each route.
-- Status: open
+- Status: fixed. Root drops its canonical link (links don't dedupe across route heads),
+  index, sign-in, and profile each set canonical, `og:url`, and a page title.
 
 ### S18. The home page hardcodes what `site.ts` already exports
 

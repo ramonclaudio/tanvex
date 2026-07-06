@@ -115,7 +115,7 @@ export const Route = createRootRouteWithContext<{
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "canonical", href: SITE_URL },
+      // rel=canonical is per-route (links don't dedupe across route heads).
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico", sizes: "32x32" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },

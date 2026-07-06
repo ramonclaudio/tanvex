@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { authClient } from "@/lib/auth-client"
+import { seo } from "@/lib/seo"
+import { SITE_NAME, SITE_URL } from "@/lib/site"
 import { cn } from "@/lib/utils"
 
 const signInEmailSchema = z.object({
@@ -82,7 +84,13 @@ function sanitizeRedirect(value: unknown): string | undefined {
   return value
 }
 
+const CANONICAL = `${SITE_URL}/sign-in`
+
 export const Route = createFileRoute("/sign-in")({
+  head: () => ({
+    meta: seo({ title: `Sign in · ${SITE_NAME}`, url: CANONICAL }),
+    links: [{ rel: "canonical", href: CANONICAL }],
+  }),
   validateSearch: (search: Record<string, unknown>): AuthSearchParams => ({
     redirect: sanitizeRedirect(search.redirect),
   }),

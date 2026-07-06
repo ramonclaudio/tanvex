@@ -32,8 +32,21 @@ import {
 } from "@/components/ui/input-group"
 import { Kbd } from "@/components/ui/kbd"
 import { Separator } from "@/components/ui/separator"
+import { seo } from "@/lib/seo"
+import { SITE_DESCRIPTION, SITE_TITLE, SITE_URL } from "@/lib/site"
 
-export const Route = createFileRoute("/")({ component: Home })
+export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: seo({
+      title: SITE_TITLE,
+      description: SITE_DESCRIPTION,
+      image: "/og.png",
+      url: SITE_URL,
+    }),
+    links: [{ rel: "canonical", href: SITE_URL }],
+  }),
+  component: Home,
+})
 
 const INSTALL_CMD = "git clone https://github.com/ramonclaudio/tanvex.git my-app"
 const REPO_URL = "https://github.com/ramonclaudio/tanvex"

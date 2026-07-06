@@ -25,6 +25,8 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { authClient } from "@/lib/auth-client"
 import { fetchAuthQuery } from "@/lib/auth-server"
+import { seo } from "@/lib/seo"
+import { SITE_NAME, SITE_URL } from "@/lib/site"
 import { cn } from "@/lib/utils"
 
 const fetchProfileData = createServerFn({ method: "GET" }).handler(async () => {
@@ -36,7 +38,13 @@ const fetchProfileData = createServerFn({ method: "GET" }).handler(async () => {
   }
 })
 
+const CANONICAL = `${SITE_URL}/profile`
+
 export const Route = createFileRoute("/_authed/profile")({
+  head: () => ({
+    meta: seo({ title: `Profile · ${SITE_NAME}`, url: CANONICAL }),
+    links: [{ rel: "canonical", href: CANONICAL }],
+  }),
   loader: async () => {
     const { user, error } = await fetchProfileData()
     return { preloadedUser: user, error }
