@@ -99,7 +99,7 @@ A clean `bun install` fixed it. Not a repo bug.
   mutations have one. An authenticated client can loop it and push unbounded blobs into
   storage. It is also missing its `returns` validator.
 - Fix: add the same `userAction` rate limit and `returns: v.string()`.
-- Status: open
+- Status: fixed.
 
 ### S5. Dead rate-limit config: `apiWrite` and `criticalAction`
 

@@ -159,7 +159,10 @@ export const updateProfile = authMutation({
  */
 export const generateAvatarUploadUrl = authMutation({
   args: {},
+  returns: v.string(),
   handler: async (ctx) => {
+    await rateLimitWithThrow(ctx, "userAction", ctx.user._id.toString())
+
     return await ctx.storage.generateUploadUrl()
   },
 })
