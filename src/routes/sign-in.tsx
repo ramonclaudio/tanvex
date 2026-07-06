@@ -857,10 +857,15 @@ function OTPFlows({
     setServerError("")
     setInfo("")
     try {
-      if (type === "forget-password") {
-        await authClient.emailOtp.requestPasswordReset({ email: phase.email })
-      } else {
-        await authClient.emailOtp.sendVerificationOtp({ email: phase.email, type })
+      // Better Auth surfaces rate limits (429) as a returned error, not a
+      // throw, so check it before announcing success.
+      const result =
+        type === "forget-password"
+          ? await authClient.emailOtp.requestPasswordReset({ email: phase.email })
+          : await authClient.emailOtp.sendVerificationOtp({ email: phase.email, type })
+      if (result.error) {
+        setServerError(result.error.message || "Could not send a new code. Try again.")
+        return
       }
       setInfo("New code sent. Check your inbox.")
     } catch {
