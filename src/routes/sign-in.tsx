@@ -74,9 +74,17 @@ const signUpSchema = z.object({
 
 type AuthSearchParams = { redirect?: string }
 
+// Post-auth redirects come from `_authed` as same-origin paths. Reject anything
+// else ("//host" is protocol-relative) so ?redirect= can't send users off-site.
+function sanitizeRedirect(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined
+  if (!value.startsWith("/") || value.startsWith("//")) return undefined
+  return value
+}
+
 export const Route = createFileRoute("/sign-in")({
   validateSearch: (search: Record<string, unknown>): AuthSearchParams => ({
-    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+    redirect: sanitizeRedirect(search.redirect),
   }),
   beforeLoad: ({ context, search }) => {
     if (context.isAuthenticated) {

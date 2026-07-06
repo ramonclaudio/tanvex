@@ -147,7 +147,8 @@ A clean `bun install` fixed it. Not a repo bug.
   open-redirect safety is the wrong layer. Only same-origin paths are ever legitimate
   here (`_authed` produces `location.href`).
 - Fix: accept only strings starting with `/` and not `//` in `validateSearch`.
-- Status: open
+- Status: fixed. Sanitized at the search-param boundary, so both the beforeLoad redirect
+  and the post-auth navigate only ever see same-origin paths.
 
 ### S9. The better-auth patch carries an inert, misleading `package.json` hunk
 
