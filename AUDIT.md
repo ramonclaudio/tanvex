@@ -169,7 +169,8 @@ A clean `bun install` fixed it. Not a repo bug.
   A repo-local declaration does the same job with zero patching.
 - Fix: delete the patch and add the `declare module "@hugeicons/core-free-icons/*"`
   ambient declaration as a repo file.
-- Status: open
+- Status: fixed. Patch deleted, `src/hugeicons.d.ts` added, typecheck and lint green
+  against a fresh unpatched `@hugeicons/react` install.
 
 ### S11. Neither patch's reason is written down
 
