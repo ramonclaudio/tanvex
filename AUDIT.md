@@ -480,3 +480,65 @@ Not executed, with reasons:
 - `npx shadcn@latest add`: verified `components.json` pins `base-luma`, but running the
   command would add files to the template.
 - Deploy walkthroughs (Vercel, Netlify, Cloudflare): external platforms.
+
+## Second pass: upgrade and port sweep
+
+A follow-up pass with three goals: no patches, latest versions of everything, and a
+scour of the upstream template (`tanstack-cn`) plus the sister Expo template for
+portable improvements.
+
+### Upgrades
+
+- Every dependency moved to current latest. `better-auth` is caret-ranged again
+  (`^1.6.23`) now that the change-password patch is gone, and `@convex-dev/better-auth`
+  rides `^0.12.5`. The oxc toolchain keeps exact pins at its new versions.
+- The change-password patch is deleted. Stock behavior (revoke all sessions, mint a
+  replacement, set the cookie inline) is transparent on the web: the browser follows
+  Set-Cookie through the same-origin proxy, the Convex JWT re-mints on forceRefresh,
+  and `getMe` already tolerates the brief rotation window. The sister Expo template has
+  run this configuration in production for months.
+- `ConvexBetterAuthProvider` is replaced by `src/lib/convex-auth.tsx`, a local bridge
+  ported from the Expo template and adapted for SSR (`initialToken` seeding). The
+  upstream provider rebuilds its token fetcher on session changes (auth churn), freezes
+  its cached token in a stale closure, and its `AuthClient` type rejects clients built
+  against better-auth 1.6.23. The old isloading-latch workaround comments are retired.
+- `@tanstack/react-start` now requires Node >=22.12, so `engines` and the README
+  minimum moved up. Deploy configs pin bun 1.3.14. CI actions moved to v6 majors with a
+  least-privilege token and a 15-minute job cap (both upstream conventions tanvex had
+  missed).
+
+### Ported from the Expo template
+
+- OTP resend now reports rate-limit errors instead of claiming a code was sent.
+- Username availability checks drop out-of-order responses (in-flight candidate ref).
+- The Resend webhook route refuses cleanly (503/500) instead of leaking serialized
+  errors when misconfigured or throwing.
+- Deploy-log guards: an explicit error while RESEND_TEST_MODE still blocks real OTP
+  delivery, and a warning when EMAIL_FROM falls back to the sandbox sender.
+- Password and OTP bounds are declared server-side in `convex/auth.ts` and shared with
+  every client mirror through `convex/constants.ts`.
+- `auth-server.ts` fails loud with a named error when the Convex URLs are missing.
+- Sign out other devices button on the profile (`revokeOtherSessions`).
+- `convex:*` CLI script wrappers (codegen, dashboard, logs, env).
+- Tests: username-rule unit tests, expired-session coverage in the wrapper suite
+  (25 to 32 tests).
+
+### Considered and skipped, with reasons
+
+- **Account deletion / soft-delete apparatus**: product scope for a starter. The
+  `onDelete` trigger already frees the avatar and row when Better Auth deletes a user,
+  so a fork enabling `user.deleteUser` gets cleanup for free.
+- **Sessions list screen**: same scope call; the revoke-others button covers the
+  security need.
+- **Centralized `env.ts` module**: tanvex's env surface is three files; the targeted
+  guards above capture the fail-fast value without the indirection.
+- **Structured JSON logger (`log.ts`)**: two log sites today; dead weight until an
+  observability story exists.
+- **Change-email UI**: the backend capability (`changeEmail` config plus OTP copy)
+  ships deliberately; the profile stays lean. Forks wire the form.
+- **`withWebhook` HMAC factory**: the only inbound webhook is component-verified via
+  Svix; port it when a hand-rolled signed webhook exists.
+- **Upstream `@hugeicons` patch**: tanvex's local ambient declaration is the better
+  mechanism; the flow there is tanvex to upstream, not the reverse.
+- **COOP `same-origin`** (upstream value): stays `same-origin-allow-popups` here; plain
+  `same-origin` severs `window.opener` for auth popups.
