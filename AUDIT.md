@@ -441,12 +441,42 @@ enforcement those flows land on is what the tests above cover.
 
 ### Gate results after all fixes (this session)
 
-Local tree (bun-installed): typecheck, lint (0 warnings, 0 errors), fmt:check, test
-(4 files, 25 tests), build — all pass. Clean-clone verification for npm and bun is
-recorded in Phase 4 below.
+| Gate      | Local tree (bun) | Clean clone + npm | Clean clone + bun |
+| --------- | ---------------- | ----------------- | ----------------- |
+| install   | pass             | pass              | pass              |
+| typecheck | pass             | pass              | pass              |
+| lint      | pass (0 + 0)     | pass              | pass              |
+| fmt:check | pass             | pass              | pass              |
+| test      | pass (25 tests)  | pass              | pass              |
+| build     | pass             | pass              | pass              |
 
-## Phase 4: README execution check (planned)
+Against the Phase 1 baseline: the npm column went from FAIL-at-install to fully green,
+and the test count went from 10 to 25.
 
-Every README step that needs no external account gets executed and recorded here. Steps
-that cannot run without cloud resources (`setup`, `dev`, the Resend webhook, the deploy
-walkthroughs) will be listed with reasons.
+## Phase 4: README execution check
+
+Executed this session:
+
+- Quick start clone + install: verified via clean clones for npm and bun (table above).
+- The five gates from those clones: all pass.
+- Scripts table vs `package.json`: every script listed except `postinstall`
+  (a lifecycle hook, deliberately omitted per S19; the `patches/` tree line documents
+  the mechanism).
+- Project-structure tree: every listed path exists on disk (checked programmatically).
+- Env var names: README, `.env.example`, `.env.convex.example`, and the actual reads in
+  `vite.config.ts`, `src/lib/site.ts`, `src/lib/auth-server.ts`, and `convex/origins.ts`
+  agree (`CONVEX_DEPLOYMENT`, `VITE_CONVEX_URL`, `VITE_CONVEX_SITE_URL`, `SITE_URL`,
+  `VITE_SITE_URL`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`, `APP_NAME`,
+  `RESEND_TEST_MODE`, `RESEND_WEBHOOK_SECRET`, `TRUSTED_ORIGINS`).
+- The "find anything missed" grep command: runs and returns the expected files.
+
+Not executed, with reasons:
+
+- `setup` / `setup:local` / `setup:fresh`: provisions a cloud Convex project. The audit
+  brief forbids provisioning cloud resources.
+- `dev` and "Open http://localhost:3000": needs the Convex deployment `setup` creates.
+- `clean`: runs `convex dev --once`, which needs deployment credentials.
+- Resend webhook walkthrough: needs a Resend account.
+- `npx shadcn@latest add`: verified `components.json` pins `base-luma`, but running the
+  command would add files to the template.
+- Deploy walkthroughs (Vercel, Netlify, Cloudflare): external platforms.
