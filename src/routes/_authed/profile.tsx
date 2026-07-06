@@ -97,7 +97,7 @@ function ProfileSkeleton() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Skeleton className="size-20 rounded-full" />
+        <Skeleton className="size-24 rounded-full" />
         <div className="space-y-2">
           <Skeleton className="h-6 w-32" />
           <Skeleton className="h-4 w-48" />
