@@ -286,7 +286,7 @@ A clean `bun install` fixed it. Not a repo bug.
   misdescribe the `clean` chain (it runs `oxfmt` and `oxlint --fix`, not `fmt:check` and
   `lint`).
 - Fix: match both files to reality.
-- Status: open
+- Status: fixed. Also updated the rate-limit bucket list for S5.
 
 ### S21. `.gitignore` ignores its own committed template
 

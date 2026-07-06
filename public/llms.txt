@@ -18,7 +18,7 @@
 - Vitest 4 + @testing-library/react + jsdom
 - Zod v4 on the client, Convex validators on the backend
 - Sonner toasts, theme provider with no-flash script, web vitals reporter
-- Bun as package manager and script runner (setup CLI uses `Bun.spawn`, `Bun.$`, `Bun.file`)
+- Any package manager (bun, pnpm, npm, yarn); scripts are runtime-agnostic node builtins
 
 ## Auth
 
@@ -42,7 +42,7 @@ Email + password and username + password sign-in. Email verification via OTP thr
 - `src/routes/_authed/profile.tsx`: profile editor with avatar upload and change-password
 - `src/lib/auth-client.ts` / `auth-server.ts`: Better Auth clients
 - `src/lib/site.ts`: SITE_URL, SITE_NAME, SITE_TITLE, SITE_DESCRIPTION
-- `src/lib/seo.ts`: head meta helper (og, twitter, canonical, json-ld)
+- `src/lib/seo.ts`: head meta helper (og, twitter, description); canonical + json-ld live in the route heads
 - `src/components/theme-provider.tsx`: light/dark/system with no-flash script
 - `src/styles.css`: Tailwind v4 + base-luma + reduced-motion
 - `scripts/setup.ts`: one-command setup (wipe, install, Convex + Better Auth + Resend)
