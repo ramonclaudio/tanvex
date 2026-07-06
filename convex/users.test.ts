@@ -34,6 +34,13 @@ describe("auth enforcement on the wrappers", () => {
     const ghost = t.withIdentity({ subject: "nope", sessionId: "nope" })
     expect(await ghost.query(api.users.getMe, {})).toBeNull()
   })
+
+  test("an expired session is not authenticated", async () => {
+    const t = initConvexTest()
+    // A real user and session, but the session expired an hour ago.
+    const { asUser } = await seedAuthedUser(t, { sessionExpiresAt: Date.now() - 60 * 60 * 1000 })
+    expect(await asUser.query(api.users.getMe, {})).toBeNull()
+  })
 })
 
 describe("updateProfile bio validation", () => {

@@ -28,7 +28,13 @@ export function initConvexTest(): TestConvex<typeof schema> {
  */
 export async function seedAuthedUser(
   t: TestConvex<typeof schema>,
-  overrides: { name?: string; email?: string; username?: string | null } = {},
+  overrides: {
+    name?: string
+    email?: string
+    username?: string | null
+    // Past-date this to seed an already-expired session.
+    sessionExpiresAt?: number
+  } = {},
 ) {
   const now = Date.now()
   const seed = ++seedCounter
@@ -57,7 +63,7 @@ export async function seedAuthedUser(
         data: {
           userId: authUser._id,
           token: `test-session-token-${seed}`,
-          expiresAt: now + 24 * 60 * 60 * 1000,
+          expiresAt: overrides.sessionExpiresAt ?? now + 24 * 60 * 60 * 1000,
           createdAt: now,
           updatedAt: now,
         },
