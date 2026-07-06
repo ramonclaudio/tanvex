@@ -1,6 +1,11 @@
 import { api } from "@convex/_generated/api"
 import type { AuthUser } from "@convex/auth"
-import { USERNAME_MIN_LENGTH, isReservedUsername, isValidUsernameFormat } from "@convex/constants"
+import {
+  BIO_MAX_LENGTH,
+  USERNAME_MIN_LENGTH,
+  isReservedUsername,
+  isValidUsernameFormat,
+} from "@convex/constants"
 import AtIcon from "@hugeicons/core-free-icons/AtIcon"
 import Camera01Icon from "@hugeicons/core-free-icons/Camera01Icon"
 import Cancel01Icon from "@hugeicons/core-free-icons/Cancel01Icon"
@@ -23,6 +28,7 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { Textarea } from "@/components/ui/textarea"
 import { authClient } from "@/lib/auth-client"
 import { fetchAuthQuery } from "@/lib/auth-server"
 import { seo } from "@/lib/seo"
@@ -595,12 +601,13 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
           Bio
         </FieldLabel>
         {isEditing ? (
-          <textarea
+          <Textarea
             value={formData.bio}
             onChange={(e) => setFormData((p) => ({ ...p, bio: e.target.value }))}
             placeholder="Tell us about yourself..."
             rows={4}
-            className="w-full resize-none rounded-3xl border border-transparent bg-input/50 px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+            maxLength={BIO_MAX_LENGTH}
+            className="resize-none"
           />
         ) : (
           <p className="text-sm text-muted-foreground">{currentUser.bio || "No bio yet."}</p>

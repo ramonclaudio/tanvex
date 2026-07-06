@@ -7,6 +7,8 @@
 
 import { v } from "convex/values"
 
+import { BIO_MAX_LENGTH } from "./constants"
+
 /**
  * Paginated response structure.
  * Spread into a v.object() alongside the page shape.
@@ -54,8 +56,6 @@ export const paginatedUsersValidator = v.object({
 // ============================================================================
 // Validation Helpers
 // ============================================================================
-
-const BIO_MAX_LENGTH = 500
 
 /**
  * Validate a bio field.

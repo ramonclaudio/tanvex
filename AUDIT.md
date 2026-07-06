@@ -325,7 +325,9 @@ A clean `bun install` fixed it. Not a repo bug.
 
 - File: `src/routes/_authed/profile.tsx:590`. An inline `<textarea>` re-implements the
   `ui/textarea.tsx` classes, with no `maxLength` while the server rejects over 500.
-  Fix: use the `Textarea` primitive with `maxLength={500}`. Status: open.
+  Fix: use the `Textarea` primitive with `maxLength={500}`. Status: fixed.
+  `BIO_MAX_LENGTH` moved to `convex/constants.ts` (the shared client-safe constants
+  file) so the client mirror and server validator read one value.
 
 ### N4. Profile loader threads an `error` field nothing reads
 
