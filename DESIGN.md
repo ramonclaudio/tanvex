@@ -173,15 +173,15 @@ The system is generated from the shadcn preset `b1VlJDbW` (Luma + Base UI + neut
 
 The palette is OKLCH grayscale (`oklch(L 0 0)`), no hue. Light mode runs from white surfaces through pale chrome to dark ink; dark mode inverts. The single non-grayscale token is `destructive`, used only for irreversible actions and validation errors.
 
-- **Background / Foreground**: `#FFFFFF` on `#262626` (light), `#171717` on `#FAFAFA` (dark). Pure white, deep ink. No off-white drift.
-- **Card / Popover**: same as background in light, slightly lifted in dark (`#262626`) so surfaces read above the page.
+- **Background / Foreground**: `#FFFFFF` on `#262626` (light), `#0A0A0A` on `#FAFAFA` (dark). Pure white, deep ink. No off-white drift.
+- **Card / Popover**: same as background in light, slightly lifted in dark (`#171717`) so surfaces read above the page.
 - **Primary**: equal to `foreground`. Buttons are dark in light mode, light in dark mode. There is no brand color.
-- **Muted / Accent**: `#F5F5F5` light, `#404040` dark. Used for secondary buttons, hovered menu items, and field backgrounds at 50% opacity.
+- **Muted / Accent**: `#F5F5F5` light, `#262626` dark. Used for secondary buttons, hovered menu items, and field backgrounds at 50% opacity.
 - **Border / Input**: `#E5E5E5` light, `rgba(255,255,255,0.10)` dark. Border is barely there; inputs use a tinted background instead of a visible border at rest.
 - **Ring**: `#A3A3A3`. Focus ring + 30% opacity halo. The same ring color reads in both modes.
 - **Destructive**: `#DC2626` light, `#F87171` dark. Reserved.
 
-The dark-mode mapping is a deterministic inversion: backgrounds and inks swap, `card` and `popover` lift one step (≈ `#262626`) so they read above the page, `secondary`/`muted`/`accent` raise to `#404040`, `muted-foreground` lightens to `#A3A3A3`, and `border` / `input` switch to `white at 10% / 15% alpha` so chrome reads against the lifted surfaces. The `ring` halo color stays mid-gray (`#737373` in dark) and works in both modes. Menu surfaces apply a `foreground` tint at 6% alpha for the focus state instead of switching to `accent`.
+The dark-mode mapping is a deterministic inversion: backgrounds and inks swap, `card` and `popover` lift one step (≈ `#171717`) so they read above the page, `secondary`/`muted`/`accent` raise to `#262626`, `muted-foreground` lightens to `#A3A3A3`, and `border` / `input` switch to `white at 10% / 15% alpha` so chrome reads against the lifted surfaces. The `ring` halo color stays mid-gray (`#737373` in dark) and works in both modes. Menu surfaces apply a `foreground` tint at 6% alpha for the focus state instead of switching to `accent`.
 
 Ground truth lives in `src/styles.css` as OKLCH values; hex tokens here are linter-compatible approximations. When precision matters (designing in Figma, importing to a sibling tool), copy the OKLCH values from `:root` and `.dark`.
 
@@ -212,7 +212,8 @@ Negative space is generous on purpose. The page is mostly background; UI element
 Depth is signaled by surface tint and a single soft ring, not by drop shadows. The system has three elevation levels:
 
 - **Level 0 (page)**: flat. `bg-background`. No shadow, no border. The default.
-- **Level 1 (card / inline surface)**: `bg-card` (often equal to background), an optional `border` at `--color-border`. No shadow.
+- **Level 1 (card)**: `bg-card` with `shadow-md` and `ring-1 ring-foreground/5`
+  (`ring-foreground/10` dark), per `card.tsx`. The system's one elevated inline surface.
 - **Level 2 (popover / menu / dropdown)**: `bg-popover/70` with a `backdrop-blur-2xl backdrop-saturate-150` pseudo-element underneath. A `shadow-lg` (Tailwind default) for separation, plus `ring-1 ring-foreground/5` (light) or `ring-foreground/10` (dark) for definition. This is the **translucent** menu surface defined by the preset.
 
 The frosted-glass pseudo-element is mandatory for translucent menus. Without it, the 70% popover opacity reveals page content directly and reads as a bug. The blur and saturation values are calibrated; do not lower them.
@@ -221,9 +222,9 @@ The frosted-glass pseudo-element is mandatory for translucent menus. Without it,
 
 Heavy rounding is the system's loudest visual choice. The radius ladder, generated from `--radius: 0.625rem`:
 
-- `rounded-sm` 6px → checkbox, kbd
-- `rounded-md` 8px → small chips
-- `rounded-lg` 10px → field labels, info badges
+- `rounded-sm` 6px → checkbox
+- `rounded-md` 8px → small chips, inline code chips
+- `rounded-lg` 10px → field labels, info badges, kbd
 - `rounded-xl` 14px → hover-card on small surfaces
 - `rounded-2xl` 18px → menu items, secondary buttons inside groups, toasts
 - `rounded-3xl` 22px → inputs, popovers, cards, dropdown surfaces, hover cards
@@ -251,9 +252,12 @@ Currently in `src/components/ui/`. Use these directly, don't reinstall.
 | Field         | `field.tsx`         | Form composition: `Field`, `FieldGroup`, `FieldSet`, `FieldLegend`, `FieldLabel`, `FieldDescription`, `FieldError`. The right wrapper for any form section. Errors render in `text-destructive` below the input.                                                                                                                                                                                  |
 | Input         | `input.tsx`         | `bg-input/50 rounded-3xl h-9 border-transparent`. On focus: `border-ring` + `ring-3 ring-ring/30`. Aria-invalid swaps to `ring-destructive/20`.                                                                                                                                                                                                                                                   |
 | Input group   | `input-group.tsx`   | Wraps `Input` plus inline `InputGroupAddon` (icon, kbd, button) into a single `rounded-4xl h-9` shell. Addons align via `data-align` (`inline-start`/`-end`/`block-start`/`-end`). Block-aligned promotes to `flex-col` and shifts to `rounded-3xl`.                                                                                                                                              |
+| Input OTP     | `input-otp.tsx`     | Verification-code entry. Six `size-9` slots in a `rounded-3xl` shell, `bg-input/50`, active slot gets the ring focus treatment. Digits only via `REGEXP_ONLY_DIGITS`. Every code form goes through `OtpCodeInput` in `sign-in.tsx`.                                                                                                                                                               |
 | Kbd           | `kbd.tsx`           | Keyboard hint chip. `bg-muted text-muted-foreground rounded-lg`. Inverts to `bg-input` inside `InputGroup`, `bg-background/20 text-background` in tooltips. `KbdGroup` chains keys.                                                                                                                                                                                                               |
 | Label         | `label.tsx`         | `text-sm leading-none font-medium`. Use raw `Label` only outside a `Field`; otherwise `FieldLabel` is preferred.                                                                                                                                                                                                                                                                                  |
 | Separator     | `separator.tsx`     | `shrink-0 bg-border data-horizontal:h-px data-vertical:w-px`. No baked-in margin — parent layout owns spacing.                                                                                                                                                                                                                                                                                    |
+| Skeleton      | `skeleton.tsx`      | Loading placeholder. `bg-muted animate-pulse rounded-2xl`; override to `rounded-full` for circles. Mirror the real content's dimensions (see `ProfileSkeleton`).                                                                                                                                                                                                                                  |
+| Spinner       | `spinner.tsx`       | Standalone loading indicator: HugeIcons `Loading03Icon`, `animate-spin`, `size-4` default, `role="status"`. Buttons that swap a leading icon for a spinner keep the inline `HugeiconsIcon` pattern instead.                                                                                                                                                                                       |
 | Sonner        | `sonner.tsx`        | Toaster mounted once in `__root.tsx`. `cn-toast` applies `rounded-2xl` over Sonner defaults. Status icons are HugeIcons at `size-4`: `CheckmarkCircle02Icon` (success), `InformationCircleIcon` (info), `Alert02Icon` (warning), `MultiplicationSignCircleIcon` (error), `Loading03Icon` (loading). Call `toast.success` / `.error` / etc. from `sonner` directly.                                |
 | Textarea      | `textarea.tsx`      | `bg-input/50 rounded-2xl min-h-16 field-sizing-content`. Auto-grows. Same focus / invalid / disabled treatment as Input.                                                                                                                                                                                                                                                                          |
 
@@ -289,31 +293,28 @@ The full base-luma surface area, ready to install via `npx shadcn@latest add <na
 
 **Form controls**
 
-| Primitive       | What it is                                                                                   |
-| --------------- | -------------------------------------------------------------------------------------------- |
-| `checkbox`      | Checkbox input with indeterminate state.                                                     |
-| `combobox`      | Typeahead searchable select. Built on `command` + `popover`.                                 |
-| `command`       | Command palette (Cmd+K style searchable menu). Fuzzy-match list with keyboard nav.           |
-| `input-otp`     | Multi-digit OTP input with auto-tabbing between boxes. Use for email/SMS verification codes. |
-| `native-select` | Native `<select>` with Luma styling. Use when you need browser-native behavior.              |
-| `radio-group`   | Single-select radio button group.                                                            |
-| `select`        | Custom select dropdown with keyboard navigation. Translucent menu surface.                   |
-| `slider`        | Range input slider with single or dual handles.                                              |
-| `switch`        | Toggle switch (on/off). Luma uses a pill-shaped thumb.                                       |
-| `toggle`        | Single toggle button (pressed / unpressed).                                                  |
-| `toggle-group`  | Group of toggles, single-select or multi-select.                                             |
+| Primitive       | What it is                                                                         |
+| --------------- | ---------------------------------------------------------------------------------- |
+| `checkbox`      | Checkbox input with indeterminate state.                                           |
+| `combobox`      | Typeahead searchable select. Built on `command` + `popover`.                       |
+| `command`       | Command palette (Cmd+K style searchable menu). Fuzzy-match list with keyboard nav. |
+| `native-select` | Native `<select>` with Luma styling. Use when you need browser-native behavior.    |
+| `radio-group`   | Single-select radio button group.                                                  |
+| `select`        | Custom select dropdown with keyboard navigation. Translucent menu surface.         |
+| `slider`        | Range input slider with single or dual handles.                                    |
+| `switch`        | Toggle switch (on/off). Luma uses a pill-shaped thumb.                             |
+| `toggle`        | Single toggle button (pressed / unpressed).                                        |
+| `toggle-group`  | Group of toggles, single-select or multi-select.                                   |
 
 **Feedback & data**
 
-| Primitive  | What it is                                                                                                 |
-| ---------- | ---------------------------------------------------------------------------------------------------------- |
-| `badge`    | Small label chip for status, counts, tags. Pill-shaped.                                                    |
-| `calendar` | Date picker calendar with range support.                                                                   |
-| `chart`    | Recharts wrapper with Luma-styled tooltips, legends, axes.                                                 |
-| `progress` | Progress bar with determinate / indeterminate states.                                                      |
-| `skeleton` | Loading placeholder blocks. Prefer over inline `bg-muted animate-pulse`.                                   |
-| `spinner`  | Loading spinner primitive. Prefer over the inline `HugeiconsIcon Loading03Icon` pattern if we standardize. |
-| `table`    | Data table primitives (`Table`, `TableHeader`, `TableBody`, `TableRow`, `TableCell`, `TableCaption`).      |
+| Primitive  | What it is                                                                                            |
+| ---------- | ----------------------------------------------------------------------------------------------------- |
+| `badge`    | Small label chip for status, counts, tags. Pill-shaped.                                               |
+| `calendar` | Date picker calendar with range support.                                                              |
+| `chart`    | Recharts wrapper with Luma-styled tooltips, legends, axes.                                            |
+| `progress` | Progress bar with determinate / indeterminate states.                                                 |
+| `table`    | Data table primitives (`Table`, `TableHeader`, `TableBody`, `TableRow`, `TableCell`, `TableCaption`). |
 
 **Composition & utility**
 
@@ -374,8 +375,9 @@ Components that aren't shadcn primitives — these encode our specific decisions
 - **`ThemeToggle`** (`src/components/theme-toggle.tsx`) — Outlined icon button opening a light/dark/system menu. Pair with `UserMenu` in the header cluster.
 - **Header bar** (`src/routes/__root.tsx`) — Fixed at `top-4`, full width with inner flex constrained to `mx-auto max-w-5xl px-6`. Home `Link` icon button on the left, `UserMenu` + `ThemeToggle` cluster on the right. Both clusters use the outline icon button variant so they read as a matching pair.
 - **Page main** (`src/routes/*`) — Every route uses `mx-auto w-full max-w-5xl px-6 py-16 sm:py-24` as the outer container so chrome aligns with the header. Form pages wrap their narrow form in an inner `mx-auto w-full max-w-sm flex-col gap-6` div.
-- **Spinner** — Inline pattern: `HugeiconsIcon` with `Loading03Icon` at `size-6`, `animate-spin`. Used as a load state when the route is committed but content isn't ready. There's also a base-luma `spinner` primitive available to install if a more comprehensive spinner is needed.
-- **`ProfileSkeleton`** (`src/routes/_authed/profile.tsx`) — Inline placeholder shown during profile data load. Uses `bg-muted` blocks at the same dimensions as the real profile content. Could be replaced with the base-luma `skeleton` primitive if we want a system-wide convention.
+- **Button loading state** — Buttons swap their leading icon for `Loading03Icon` with `animate-spin` while pending (profile save buttons, avatar overlay). Standalone loading indicators use the `Spinner` primitive.
+- **`ProfileSkeleton`** (`src/routes/_authed/profile.tsx`) — Placeholder shown during profile data load, composed from `Skeleton` primitives at the same dimensions as the real profile content.
+- **`SegmentedToggle`** (`src/routes/sign-in.tsx`) — Pill switch for the sign-in / sign-up mode and method pickers. `rounded-3xl` shell with `p-1`, `rounded-2xl` items (the ladder's nested value), active item inverts to `bg-foreground text-background`, buttons carry `aria-pressed`.
 
 ## Do's and Don'ts
 
@@ -391,7 +393,7 @@ Components that aren't shadcn primitives — these encode our specific decisions
 
 **Don't** use color to communicate brand. The only colored token is `destructive`, and it means "irreversible". Brand expression is through type, spacing, and rounding, not hue.
 
-**Don't** add a drop shadow to a page-level surface. Cards lay flat. Only popovers / menus / dialogs are elevated, and they use the translucent recipe.
+**Don't** add drop shadows to page-level surfaces or ad-hoc divs. `Card` is the one elevated inline surface (`shadow-md` + ring); popovers / menus / dialogs float with the translucent recipe (`shadow-lg`). Nothing else casts a shadow.
 
 **Don't** narrow forms by changing the page main's max width. Wrap the form in `mx-auto w-full max-w-sm` inside the wide main so chrome alignment is preserved across pages.
 
