@@ -242,19 +242,8 @@ export const authUserValidator = v.object({
 // ============================================================================
 // These use the raw `query` builder because this file IS the auth primitive
 // that functions.ts depends on. Importing wrappers from ./functions would
-// create a circular dependency.
-
-/**
- * Get the current authenticated user.
- * Returns null if not authenticated.
- */
-export const getCurrentUser = query({
-  args: {},
-  returns: v.union(authUserValidator, v.null()),
-  handler: async (ctx) => {
-    return (await safeGetAuthenticatedUser(ctx)) ?? null
-  },
-})
+// create a circular dependency. The current-user query lives in users.ts
+// (getMe) where the wrappers are available.
 
 /**
  * Check if the current user has a password-based account.

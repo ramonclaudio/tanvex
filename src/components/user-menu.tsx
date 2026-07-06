@@ -50,7 +50,7 @@ function SignInLink() {
 
 function AuthedMenu() {
   const navigate = useNavigate()
-  const { data: user } = useQuery(api.auth.getCurrentUser)
+  const { data: user } = useQuery(api.users.getMe)
 
   const handleSignOut = async () => {
     await authClient.signOut()

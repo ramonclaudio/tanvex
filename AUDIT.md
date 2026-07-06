@@ -78,7 +78,7 @@ A clean `bun install` fixed it. Not a repo bug.
   circular-dependency comment in `auth.ts` justifies `hasPassword` staying on the raw
   builder, not a duplicate current-user endpoint.
 - Fix: delete `getCurrentUser` and point `user-menu.tsx` at `api.users.getMe`.
-- Status: open
+- Status: fixed.
 
 ### S3. `users.createdAt` duplicates `_creationTime`
 
