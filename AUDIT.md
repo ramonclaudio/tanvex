@@ -360,7 +360,7 @@ A clean `bun install` fixed it. Not a repo bug.
 ### N9. `oxlint-tsgolint` caret-ranged while oxlint and oxfmt are exact
 
 - File: `package.json:108`. The type-aware backend is coupled to the pinned oxlint.
-  Fix: pin exact like oxlint and oxfmt. Status: open.
+  Fix: pin exact like oxlint and oxfmt. Status: fixed.
 
 ### N10. bun-only commands in shipped, PM-neutral files
 
