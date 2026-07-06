@@ -13,6 +13,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { useForm } from "@tanstack/react-form"
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 import { useConvexAuth, useMutation } from "convex/react"
+import { REGEXP_ONLY_DIGITS } from "input-otp"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -29,6 +30,7 @@ import {
   FieldSet,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
 import { seo } from "@/lib/seo"
@@ -962,18 +964,7 @@ function OTPFlows({
                 return (
                   <Field data-invalid={invalid || undefined}>
                     <FieldLabel htmlFor={field.name}>Verification code</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      maxLength={6}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={invalid}
-                      placeholder="123456"
-                    />
+                    <OtpCodeInput field={field} invalid={invalid} />
                     {invalid ? <FieldError errors={field.state.meta.errors} /> : null}
                   </Field>
                 )
@@ -1046,18 +1037,7 @@ function OTPFlows({
               return (
                 <Field data-invalid={invalid || !!serverError || undefined}>
                   <FieldLabel htmlFor={field.name}>Verification code</FieldLabel>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    aria-invalid={invalid || !!serverError}
-                    placeholder="123456"
-                  />
+                  <OtpCodeInput field={field} invalid={invalid || !!serverError} />
                   {invalid ? <FieldError errors={field.state.meta.errors} /> : null}
                   {serverError ? <FieldError>{serverError}</FieldError> : null}
                   {info ? <FieldDescription>{info}</FieldDescription> : null}
@@ -1086,6 +1066,36 @@ function OTPFlows({
         </FieldGroup>
       </FieldSet>
     </form>
+  )
+}
+
+// The narrow slice of TanStack Form's FieldApi the OTP input needs, so one
+// component serves fields from differently-typed forms.
+type OtpFieldApi = {
+  name: string
+  state: { value: string }
+  handleChange: (value: string) => void
+  handleBlur: () => void
+}
+
+function OtpCodeInput({ field, invalid }: { field: OtpFieldApi; invalid: boolean }) {
+  return (
+    <InputOTP
+      id={field.name}
+      maxLength={6}
+      pattern={REGEXP_ONLY_DIGITS}
+      autoComplete="one-time-code"
+      value={field.state.value}
+      onChange={field.handleChange}
+      onBlur={field.handleBlur}
+      aria-invalid={invalid}
+    >
+      <InputOTPGroup>
+        {Array.from({ length: 6 }, (_, i) => (
+          <InputOTPSlot key={i} index={i} />
+        ))}
+      </InputOTPGroup>
+    </InputOTP>
   )
 }
 
