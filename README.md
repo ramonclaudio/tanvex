@@ -32,6 +32,10 @@ For local Convex via Docker instead of cloud: `bun run setup:local`.
 dev                            Vite + Convex dev servers on :3000
 dev:web                        vite dev only
 convex:dev                     convex dev only
+convex:codegen                 regenerate convex/_generated
+convex:dashboard               open the Convex dashboard
+convex:logs                    tail deployment logs (:prod for production)
+convex:env                     list deployment env vars (:prod for production)
 build                          vite build && tsc --noEmit
 start                          Nitro SSR server from .output/
 preview                        vite preview
