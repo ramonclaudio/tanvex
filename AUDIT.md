@@ -207,7 +207,8 @@ A clean `bun install` fixed it. Not a repo bug.
 - Fix: drop `@opentelemetry/api`. Move `@tanstack/react-query-devtools` to
   devDependencies and actually wire `ReactQueryDevtoolsPanel` into `devtools.tsx` next
   to the router panel.
-- Status: open
+- Status: fixed. Build verified green without otel (the better-auth telemetry import is
+  guarded and optional).
 
 ### S14. Auth boundary components where DESIGN.md forbids them
 
