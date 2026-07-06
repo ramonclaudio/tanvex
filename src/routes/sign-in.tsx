@@ -1118,9 +1118,12 @@ function SegmentedToggle<T extends string>({
           <button
             key={opt.value}
             type="button"
+            aria-pressed={active}
             onClick={() => onChange(opt.value)}
             className={cn(
-              "flex-1 rounded-[calc(var(--radius)*1.6)] font-medium transition-colors",
+              // rounded-2xl (18px) nests inside the rounded-3xl (22px) shell
+              // with p-1: 22 - 4 = 18, per the radius ladder.
+              "flex-1 rounded-2xl font-medium transition-colors",
               size === "sm" ? "py-1 text-xs" : "py-2 text-sm",
               active
                 ? "bg-foreground text-background"

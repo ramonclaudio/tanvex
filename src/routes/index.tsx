@@ -191,7 +191,7 @@ function Home() {
         </InputGroup>
         <p className="text-xs text-muted-foreground">
           Then{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.7rem]">
+          <code className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[0.7rem]">
             npm run setup
           </code>{" "}
           (or bun, pnpm, yarn) to wire Convex, Better Auth, and Resend.
@@ -241,11 +241,11 @@ function Home() {
           <h2 className="text-2xl font-medium tracking-tight">Try it</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             shadcn primitives land in{" "}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+            <code className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs">
               src/components/ui/
             </code>
             . Add more with{" "}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+            <code className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs">
               npx shadcn@latest add
             </code>
             .
@@ -316,7 +316,7 @@ function WelcomeBack() {
 function renderInline(line: string) {
   return line.split(/(`[^`]+`)/).map((part, i) =>
     part.startsWith("`") && part.endsWith("`") ? (
-      <code key={i} className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.75rem]">
+      <code key={i} className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[0.75rem]">
         {part.slice(1, -1)}
       </code>
     ) : (

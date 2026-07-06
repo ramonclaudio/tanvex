@@ -12,6 +12,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -73,14 +74,14 @@ function AuthedMenu() {
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="min-w-52">
-        <div className="flex flex-col gap-0.5 px-3 py-2.5">
+        <DropdownMenuLabel className="flex flex-col gap-0.5">
           <span className="truncate text-sm font-medium text-foreground">{label}</span>
           {handle ? (
             <span className="truncate text-xs text-muted-foreground">@{handle}</span>
           ) : user?.email ? (
             <span className="truncate text-xs text-muted-foreground">{user.email}</span>
           ) : null}
-        </div>
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem render={<Link to="/profile" />}>
           <HugeiconsIcon icon={UserIcon} strokeWidth={2} />
