@@ -344,7 +344,7 @@ A clean `bun install` fixed it. Not a repo bug.
 ### N6. Header icons off the size ladder
 
 - File: `src/components/theme-toggle.tsx:22,26`, `src/routes/__root.tsx:168`.
-  `size-[1.2rem]` is not a DESIGN.md ladder step. Fix: `size-5`. Status: open.
+  `size-[1.2rem]` is not a DESIGN.md ladder step. Fix: `size-5`. Status: fixed.
 
 ### N7. `"use client"` in `field.tsx`
 

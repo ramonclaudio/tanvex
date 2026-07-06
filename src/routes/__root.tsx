@@ -165,7 +165,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   aria-label="Home"
                   className={cn(
                     buttonVariants({ variant: "outline", size: "icon" }),
-                    "[&_svg]:size-[1.2rem]",
+                    "[&_svg]:size-5",
                   )}
                 >
                   <HugeiconsIcon icon={Home01Icon} strokeWidth={2} />
