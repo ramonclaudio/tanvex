@@ -1,4 +1,5 @@
 import { cronJobs } from "convex/server"
+import { v } from "convex/values"
 
 import { components, internal } from "./_generated/api"
 import { internalMutation } from "./_generated/server"
@@ -18,6 +19,7 @@ const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
 export const cleanupResend = internalMutation({
   args: {},
+  returns: v.null(),
   handler: async (ctx) => {
     // Delivered/cancelled/bounced: 7 day retention.
     await ctx.scheduler.runAfter(0, components.resend.lib.cleanupOldEmails, {
@@ -28,6 +30,7 @@ export const cleanupResend = internalMutation({
     await ctx.scheduler.runAfter(0, components.resend.lib.cleanupAbandonedEmails, {
       olderThan: 4 * ONE_WEEK_MS,
     })
+    return null
   },
 })
 

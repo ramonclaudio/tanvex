@@ -1,6 +1,7 @@
 import type { GenericCtx } from "@convex-dev/better-auth"
 import { requireRunMutationCtx } from "@convex-dev/better-auth/utils"
 import { Resend, vOnEmailEventArgs } from "@convex-dev/resend"
+import { v } from "convex/values"
 
 import { components, internal } from "./_generated/api"
 import type { DataModel } from "./_generated/dataModel"
@@ -27,10 +28,12 @@ export const resend: Resend = new Resend(components.resend, {
  */
 export const handleEmailEvent = internalMutation({
   args: vOnEmailEventArgs,
+  returns: v.null(),
   handler: async (_ctx, args) => {
     if (args.event.type === "email.bounced" || args.event.type === "email.complained") {
       console.warn(`[resend] ${args.event.type} for email ${args.id}`, args.event.data)
     }
+    return null
   },
 })
 

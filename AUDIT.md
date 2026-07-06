@@ -315,7 +315,7 @@ A clean `bun install` fixed it. Not a repo bug.
 
 - File: `convex/email.ts:28`, `convex/crons.ts:19`, `convex/auth.ts:281`.
   `handleEmailEvent`, `cleanupResend`, and `rotateKeys` lack `returns` while every other
-  function declares one. Fix: add `v.null()` to all three. Status: open.
+  function declares one. Fix: add `v.null()` to all three. Status: fixed.
 
 ### N3. Bio textarea forks the installed primitive and skips the 500-char mirror
 

@@ -271,8 +271,10 @@ export const hasPassword = query({
  */
 export const rotateKeys = internalAction({
   args: {},
+  returns: v.null(),
   handler: async (ctx) => {
     const auth = createAuth(ctx)
-    return auth.api.rotateKeys()
+    await auth.api.rotateKeys()
+    return null
   },
 })
