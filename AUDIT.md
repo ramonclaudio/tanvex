@@ -195,7 +195,7 @@ A clean `bun install` fixed it. Not a repo bug.
   sat undetected for two months because nothing pushed. Fresh-resolving legs are the
   right early-warning design. They just need a clock.
 - Fix: add a weekly `schedule:` trigger.
-- Status: open
+- Status: fixed.
 
 ### S13. Unused production dependencies
 
@@ -295,7 +295,7 @@ A clean `bun install` fixed it. Not a repo bug.
   The file survives because it is already tracked, but ignore-respecting tools (ripgrep,
   some editors) hide it.
 - Fix: add `!.env.convex.example`.
-- Status: open
+- Status: fixed. `git check-ignore` now exits 1 for the file.
 
 ### S22. `clean` requires a binary that only exists on the author's machine
 
@@ -305,7 +305,7 @@ A clean `bun install` fixed it. Not a repo bug.
   Mac with `trash` installed.
 - Fix: add `trash-cli` as a devDependency (a cross-platform `trash` bin lands on the
   run-script PATH).
-- Status: open
+- Status: fixed. `node_modules/.bin/trash` present, `clean.ts` header updated.
 
 ## Nits
 
