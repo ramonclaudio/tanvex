@@ -135,7 +135,8 @@ A clean `bun install` fixed it. Not a repo bug.
   falsy.
 - Fix: set `disableSignUp: true`. Unknown emails then get a silent no-send success (the
   plugin's built-in anti-enumeration behavior). The sign-up path is unaffected.
-- Status: open
+- Status: fixed. Verified in the plugin source that existing-user sends (including the
+  unverified-account resend path) are untouched, only unknown-email sign-in sends stop.
 
 ### S8. Unvalidated `?redirect=` search param on sign-in
 

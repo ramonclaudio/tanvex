@@ -148,6 +148,10 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
       emailOTP({
         overrideDefaultEmailVerification: true,
         sendVerificationOnSignUp: true,
+        // OTP sign-in must not mint accounts for unknown emails (they'd get
+        // name: "" and skip the sign-up flow). Unknown emails get a silent
+        // no-send success, which also prevents email enumeration.
+        disableSignUp: true,
         changeEmail: {
           enabled: true,
           verifyCurrentEmail: true,
