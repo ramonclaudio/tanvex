@@ -10,7 +10,7 @@ Live demo: https://tanvex-demo.vercel.app
 
 ## Quick start
 
-Needs Node 20+ or [Bun](https://bun.sh), a [Convex](https://convex.dev) account (free tier), and a [Resend](https://resend.com/api-keys) API key (`re_...`, free tier is 3k/month).
+Needs Node 22.12+ or [Bun](https://bun.sh), a [Convex](https://convex.dev) account (free tier), and a [Resend](https://resend.com/api-keys) API key (`re_...`, free tier is 3k/month).
 
 ```bash
 git clone https://github.com/ramonclaudio/tanvex.git
@@ -172,7 +172,7 @@ npx vercel env add VITE_SITE_URL production   # repeat per variable
 
 ### Netlify
 
-Ships `netlify.toml` (build command, publish dir, `BUN_VERSION=1.3.13` pin). Deploy via [app.netlify.com/start](https://app.netlify.com/start) (connect repo, add the env vars above under Site Settings → Environment Variables) or:
+Ships `netlify.toml` (build command, publish dir, `BUN_VERSION=1.3.14` pin). Deploy via [app.netlify.com/start](https://app.netlify.com/start) (connect repo, add the env vars above under Site Settings → Environment Variables) or:
 
 ```bash
 npx netlify init

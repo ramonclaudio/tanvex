@@ -21,7 +21,8 @@ type AppErrorData = {
 }
 
 function createError(code: ErrorCodeValue, message: string, options?: { field?: string }) {
-  return new ConvexError({ code, message, ...options } as AppErrorData)
+  const data: AppErrorData = { code, message, ...options }
+  return new ConvexError(data)
 }
 
 export function authenticationRequired(message = "Authentication required") {

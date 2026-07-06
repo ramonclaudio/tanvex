@@ -58,6 +58,13 @@ export const Route = createFileRoute("/")({
 const INSTALL_CMD = `git clone ${REPO_URL}.git my-app`
 const REPO_SLUG = REPO_URL.replace("https://github.com/", "")
 
+const notify = () => {
+  toast("Sonner is wired up.", {
+    description: "base-luma tokens, HugeIcons, theme-aware.",
+    action: { label: "Nice", onClick: () => {} },
+  })
+}
+
 const stack = [
   {
     icon: RocketIcon,
@@ -111,13 +118,6 @@ function Home() {
     setCopied(true)
     toast.success("Copied to clipboard", { description: INSTALL_CMD })
     setTimeout(() => setCopied(false), 2000)
-  }
-
-  const notify = () => {
-    toast("Sonner is wired up.", {
-      description: "base-luma tokens, HugeIcons, theme-aware.",
-      action: { label: "Nice", onClick: () => {} },
-    })
   }
 
   return (
