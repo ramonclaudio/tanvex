@@ -180,7 +180,7 @@ A clean `bun install` fixed it. Not a repo bug.
 - Fix: add `patches/README.md` with what the better-auth patch changes, why (the
   upstream `/change-password` fix is unreleased as of 1.6.23, verified against the
   published tarball), and the removal condition.
-- Status: open
+- Status: fixed. `patches/README.md` added. The hugeicons patch no longer exists (S10).
 
 ### S12. CI can rot with zero commits, and did
 
