@@ -37,10 +37,10 @@ import { cn } from "@/lib/utils"
 
 const fetchProfileData = createServerFn({ method: "GET" }).handler(async () => {
   try {
-    const user = await fetchAuthQuery(api.users.getMe, {})
-    return { user, error: null as string | null }
+    return await fetchAuthQuery(api.users.getMe, {})
   } catch {
-    return { user: null, error: "not_authenticated" as string | null }
+    // Unauthenticated during SSR: the client-side auth flow takes over.
+    return null
   }
 })
 
@@ -52,8 +52,7 @@ export const Route = createFileRoute("/_authed/profile")({
     links: [{ rel: "canonical", href: CANONICAL }],
   }),
   loader: async () => {
-    const { user, error } = await fetchProfileData()
-    return { preloadedUser: user, error }
+    return { preloadedUser: await fetchProfileData() }
   },
   component: ProfilePage,
 })

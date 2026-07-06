@@ -333,7 +333,7 @@ A clean `bun install` fixed it. Not a repo bug.
 
 - File: `src/routes/_authed/profile.tsx:30-43`. `fetchProfileData` returns
   `{ user, error }` but the component reads only `preloadedUser`. Fix: drop the field.
-  Status: open.
+  Status: fixed.
 
 ### N5. Reset-password confirmation is set and immediately unmounted
 
