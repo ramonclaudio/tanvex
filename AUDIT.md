@@ -369,7 +369,7 @@ A clean `bun install` fixed it. Not a repo bug.
   Comments hardcode `bun run` and `bunx` in files that ship to users of any PM, against
   the tanstack-cn convention. README documents multi-PM usage properly. Fix: shipped
   comments use `npx convex` and `npm run`, the baseline every environment has.
-  Status: open.
+  Status: fixed.
 
 ## Accepted or refuted (no change, reasons recorded)
 

@@ -13,8 +13,8 @@
  *   serves multiple frontend deploys (e.g. Vercel + Netlify, or a custom
  *   domain alongside the platform default).
  *
- *     bunx convex env set SITE_URL https://your-app.vercel.app --prod
- *     bunx convex env set TRUSTED_ORIGINS "https://your-app.netlify.app,https://www.example.com" --prod
+ *     npx convex env set SITE_URL https://your-app.vercel.app --prod
+ *     npx convex env set TRUSTED_ORIGINS "https://your-app.netlify.app,https://www.example.com" --prod
  *
  * Limitation: emails, magic links, and OAuth callbacks always point to
  * `SITE_URL`. If a user signs up on a non-canonical host (e.g. one of the
