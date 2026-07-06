@@ -8,6 +8,7 @@ import {
   isReservedUsername,
   isValidUsernameFormat,
 } from "@convex/constants"
+import Alert02Icon from "@hugeicons/core-free-icons/Alert02Icon"
 import AtIcon from "@hugeicons/core-free-icons/AtIcon"
 import Camera01Icon from "@hugeicons/core-free-icons/Camera01Icon"
 import Cancel01Icon from "@hugeicons/core-free-icons/Cancel01Icon"
@@ -26,6 +27,7 @@ import { useConvexAuth, useMutation } from "convex/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -489,9 +491,10 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
       </div>
 
       {error ? (
-        <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </div>
+        <Alert variant="destructive">
+          <HugeiconsIcon icon={Alert02Icon} strokeWidth={2} />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       ) : null}
 
       <div className="flex items-center gap-6">
