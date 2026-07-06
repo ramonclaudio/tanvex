@@ -15,7 +15,8 @@
  * the user can see what broke. Pass `VERBOSE=1` to stream all child output.
  *
  * PM-agnostic: detects bun/pnpm/yarn/npm via `npm_config_user_agent` or lockfile.
- * Uses macOS `trash` so anything wiped is recoverable.
+ * Uses `trash` (the trash-cli devDep on the run-script PATH, cross-platform)
+ * so anything wiped is recoverable.
  *
  * Usage:
  *   <pm> run clean              # quiet (default)

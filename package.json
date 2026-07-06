@@ -108,6 +108,7 @@
     "rollup-plugin-visualizer": "^7.0.1",
     "shadcn": "^4.7.0",
     "tailwindcss": "^4.2.4",
+    "trash-cli": "^7.2.0",
     "tsx": "^4.20.6",
     "typescript": "^6.0.3",
     "vite": "^8.0.10",
