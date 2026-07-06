@@ -24,6 +24,7 @@ import { createServerFn } from "@tanstack/react-start"
 import { useQuery } from "convex-helpers/react"
 import { useConvexAuth, useMutation } from "convex/react"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -131,6 +132,7 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
   // keystroke can't overwrite the verdict for the current one.
   const pendingUsernameRef = useRef<string | null>(null)
 
+  const [isRevokingSessions, setIsRevokingSessions] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [isSavingPassword, setIsSavingPassword] = useState(false)
   const [passwordForm, setPasswordForm] = useState({
@@ -358,6 +360,22 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
     } finally {
       setIsUploadingAvatar(false)
       if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
+
+  const handleRevokeOtherSessions = async () => {
+    setIsRevokingSessions(true)
+    try {
+      const result = await authClient.revokeOtherSessions()
+      if (result.error) {
+        toast.error(result.error.message || "Could not sign out other devices")
+        return
+      }
+      toast.success("Signed out everywhere else. This device stays signed in.")
+    } catch {
+      toast.error("Could not sign out other devices")
+    } finally {
+      setIsRevokingSessions(false)
     }
   }
 
@@ -653,6 +671,14 @@ function ProfileContent({ preloadedUser }: { preloadedUser: PreloadedUser }) {
             </dd>
           </div>
         </dl>
+        <Button
+          variant="outline"
+          onClick={handleRevokeOtherSessions}
+          disabled={isRevokingSessions}
+          className="self-start"
+        >
+          Sign out other devices
+        </Button>
       </div>
 
       {hasPassword ? (
