@@ -4,7 +4,7 @@ import UserIcon from "@hugeicons/core-free-icons/UserIcon"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { useQuery } from "convex-helpers/react"
-import { Authenticated, AuthLoading, Unauthenticated } from "convex/react"
+import { useConvexAuth } from "convex/react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { buttonVariants } from "@/components/ui/button"
@@ -19,19 +19,15 @@ import { authClient } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 
 export function UserMenu() {
-  return (
-    <>
-      <AuthLoading>
-        <div className="size-9 animate-pulse rounded-full bg-muted" aria-hidden />
-      </AuthLoading>
-      <Unauthenticated>
-        <SignInLink />
-      </Unauthenticated>
-      <Authenticated>
-        <AuthedMenu />
-      </Authenticated>
-    </>
-  )
+  // UPSTREAM(convex-better-auth#isloading-latch): gate on `isAuthenticated`,
+  // which stays stable through Better Auth's session refetch on window focus.
+  // Auth boundary components key on `isLoading` and would unmount the menu
+  // into a skeleton on every refetch. See the DESIGN.md Do on auth gating.
+  const { isLoading, isAuthenticated } = useConvexAuth()
+
+  if (isAuthenticated) return <AuthedMenu />
+  if (isLoading) return <div className="size-9 animate-pulse rounded-full bg-muted" aria-hidden />
+  return <SignInLink />
 }
 
 function SignInLink() {

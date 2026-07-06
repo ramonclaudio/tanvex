@@ -17,7 +17,7 @@ import UserCircleIcon from "@hugeicons/core-free-icons/UserCircleIcon"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useQuery } from "convex-helpers/react"
-import { Authenticated, Unauthenticated } from "convex/react"
+import { useConvexAuth } from "convex/react"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -81,6 +81,9 @@ const highlights = [
 ]
 
 function Home() {
+  // UPSTREAM(convex-better-auth#isloading-latch): explicit conditional instead
+  // of <Authenticated>/<Unauthenticated>, per the DESIGN.md Do on auth gating.
+  const { isAuthenticated } = useConvexAuth()
   const [copied, setCopied] = useState(false)
 
   const copyInstall = async () => {
@@ -118,23 +121,20 @@ function Home() {
           On Vite 8 Rolldown+Oxc, Tailwind v4 + shadcn/ui base-luma on Base UI, Oxlint + Oxfmt.
         </p>
 
-        <Authenticated>
-          <WelcomeBack />
-        </Authenticated>
+        {isAuthenticated ? <WelcomeBack /> : null}
 
         <div className="flex flex-wrap items-center gap-3">
-          <Unauthenticated>
-            <Link to="/sign-in" className={buttonVariants({ size: "lg" })}>
-              Sign in
-              <HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" />
-            </Link>
-          </Unauthenticated>
-          <Authenticated>
+          {isAuthenticated ? (
             <Link to="/profile" className={buttonVariants({ size: "lg" })}>
               <HugeiconsIcon icon={UserCircleIcon} data-icon="inline-start" />
               Your profile
             </Link>
-          </Authenticated>
+          ) : (
+            <Link to="/sign-in" className={buttonVariants({ size: "lg" })}>
+              Sign in
+              <HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" />
+            </Link>
+          )}
           <a
             href={REPO_URL}
             target="_blank"

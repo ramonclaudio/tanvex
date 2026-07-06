@@ -219,7 +219,8 @@ A clean `bun install` fixed it. Not a repo bug.
   flashing to a skeleton on each focus.
 - Fix: convert both to `useConvexAuth` conditionals keyed on the stable
   `isAuthenticated`.
-- Status: open
+- Status: fixed. Both carry the `UPSTREAM(convex-better-auth#isloading-latch)` tag like
+  the existing call sites.
 
 ### S15. The `cn-toast` class is applied but defined nowhere
 
