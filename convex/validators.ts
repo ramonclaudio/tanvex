@@ -29,9 +29,10 @@ export const userProfileUpdateFields = {
 }
 
 /**
- * Public user profile returned by api.users.getUser and in listUsers pages.
- * Merges app-owned fields (bio, avatar storage resolved to URL) with Better
- * Auth identity fields (name, username).
+ * Public user profile returned by internal.users.getUser and in listUsers
+ * pages, exposed over the rate-limited /api/users HTTP routes. Merges
+ * app-owned fields (bio, avatar storage resolved to URL) with Better Auth
+ * identity fields (name, username).
  */
 export const publicUserProfileValidator = v.object({
   _id: v.id("users"),

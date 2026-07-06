@@ -9,6 +9,7 @@
 import { v } from "convex/values"
 
 import type { Id } from "./_generated/dataModel"
+import { internalQuery } from "./_generated/server"
 import { authComponent, authUserValidator } from "./auth"
 import { validationError } from "./errors"
 import { authMutation, optionalAuthQuery } from "./functions"
@@ -43,8 +44,9 @@ export const getMe = optionalAuthQuery({
  * Accepts an arbitrary string and normalizes it via `ctx.db.normalizeId`,
  * so untrusted inputs (e.g. HTTP query params) can be passed straight through.
  * Returns null when the id is malformed or either record is missing.
+ * Internal: only reachable through the rate-limited GET /api/users route.
  */
-export const getUser = optionalAuthQuery({
+export const getUser = internalQuery({
   args: { userId: v.string() },
   returns: v.union(publicUserProfileValidator, v.null()),
   handler: async (ctx, args) => {
@@ -76,8 +78,9 @@ export const getUser = optionalAuthQuery({
 /**
  * List users (paginated) with Better Auth identity fields merged in.
  * Entries with a missing Better Auth record are skipped.
+ * Internal: only reachable through the rate-limited GET /api/users/list route.
  */
-export const listUsers = optionalAuthQuery({
+export const listUsers = internalQuery({
   args: {
     cursor: v.optional(v.string()),
     limit: v.optional(v.number()),

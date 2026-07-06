@@ -2,7 +2,7 @@ import { corsRouter } from "convex-helpers/server/cors"
 import { httpRouter } from "convex/server"
 import { v } from "convex/values"
 
-import { api, internal } from "./_generated/api"
+import { internal } from "./_generated/api"
 import { httpAction, internalMutation } from "./_generated/server"
 import { authComponent, createAuth } from "./auth"
 import { resend } from "./email"
@@ -157,7 +157,7 @@ cors.route({
 
     // getUser normalizes the id internally and returns null on malformed input
     // or missing record, so we treat both as 404.
-    const user = await ctx.runQuery(api.users.getUser, { userId })
+    const user = await ctx.runQuery(internal.users.getUser, { userId })
 
     if (!user) {
       return new Response(JSON.stringify({ error: "User not found" }), {
@@ -209,10 +209,7 @@ cors.route({
       )
     }
 
-    const result = await ctx.runQuery(api.users.listUsers, {
-      cursor,
-      limit: Math.min(Math.max(limit, 1), 100),
-    })
+    const result = await ctx.runQuery(internal.users.listUsers, { cursor, limit })
 
     return new Response(JSON.stringify(result), {
       status: 200,

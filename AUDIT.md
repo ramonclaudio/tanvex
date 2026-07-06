@@ -66,7 +66,8 @@ A clean `bun install` fixed it. Not a repo bug.
   unmetered. Neither reads `ctx.user`, so the auth wrapper is also pointless.
 - Fix: convert both to `internalQuery`, call via `internal.users.*` from `http.ts`, and
   clamp the limit once (it is currently clamped identically in both layers).
-- Status: open
+- Status: fixed. Both internalized, single clamp in the query, docstrings note the HTTP
+  route as the only entry point.
 
 ### S2. Duplicate current-user endpoints
 
