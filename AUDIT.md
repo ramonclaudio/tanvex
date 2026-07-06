@@ -275,7 +275,7 @@ A clean `bun install` fixed it. Not a repo bug.
   `<title>` suffix" is false, it never is. (4) The scripts table omits `dev:web` and
   `convex:dev`.
 - Fix: correct all four.
-- Status: open
+- Status: fixed.
 
 ### S20. `llms.txt` and `llms-full.txt` describe scripts that don't exist
 

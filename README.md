@@ -30,6 +30,8 @@ For local Convex via Docker instead of cloud: `bun run setup:local`.
 
 ```
 dev                            Vite + Convex dev servers on :3000
+dev:web                        vite dev only
+convex:dev                     convex dev only
 build                          vite build && tsc --noEmit
 start                          Nitro SSR server from .output/
 preview                        vite preview
@@ -83,7 +85,7 @@ Update before you deploy.
 
 ```
 SITE_URL          # canonical URL, og:url, sitemap entries
-SITE_NAME         # used in <title> suffix and OG site name
+SITE_NAME         # og:site_name, PWA title, JSON-LD name
 SITE_TITLE        # default page title
 SITE_DESCRIPTION  # meta description, OG description
 AUTHOR_NAME, AUTHOR_URL, AUTHOR_TWITTER, AUTHOR_GITHUB, REPO_URL
@@ -129,7 +131,7 @@ If you skip both, SEO meta will point at `localhost`. Search engines and social 
 
 ## Deploying
 
-Two parts: a Convex backend and a frontend host. Nitro auto-detects the host from build env (`VERCEL`, `NETLIFY`, Cloudflare Workers) and emits the right output. Security headers, build commands, and bun version are pinned in the shipped `vercel.json`, `netlify.toml`, and `wrangler.toml` — no edits needed. `VITE_*` env vars are build-time, set them in the platform's env vars before deploys.
+Two parts: a Convex backend and a frontend host. Nitro auto-detects the host from build env (`VERCEL`, `NETLIFY`, Cloudflare Workers) and emits the right output. Security headers ship platform-neutral via Nitro route rules in `vite.config.ts`. Build commands and the bun version are pinned in the shipped `vercel.json`, `netlify.toml`, and `wrangler.toml`, no edits needed. `VITE_*` env vars are build-time, set them in the platform's env vars before deploys.
 
 ### Convex backend
 
@@ -199,8 +201,12 @@ Anywhere Nitro runs (Node, Bun, AWS Lambda, Deno Deploy, etc.): set `NITRO_PRESE
 ├── convex/                            # backend
 │   ├── auth.ts                        # Better Auth config, user helpers
 │   ├── auth.config.ts                 # JWT for Convex-side auth checks
+│   ├── constants.ts                   # client-safe constants (username + bio rules)
+│   ├── convex.config.ts               # component registration (better-auth, rate-limiter, resend)
 │   ├── crons.ts                       # scheduled jobs
 │   ├── email.ts                       # Resend helpers + OTP templates
+│   ├── errors.ts                      # ConvexError factories with stable codes
+│   ├── functions.ts                   # authQuery / authMutation / optionalAuthQuery wrappers
 │   ├── http.ts                        # HTTP router with CORS
 │   ├── origins.ts                     # SITE_URL + TRUSTED_ORIGINS parsing
 │   ├── rateLimit.ts                   # token-bucket limiter config
