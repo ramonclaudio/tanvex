@@ -178,6 +178,13 @@ export const updateAvatar = authMutation({
   handler: async (ctx, args) => {
     await rateLimitWithThrow(ctx, "userAction", ctx.user._id.toString())
 
+    // v.id("_storage") validates shape only; reject ids for blobs that were
+    // never uploaded instead of storing a dangling reference.
+    const blob = await ctx.db.system.get(args.storageId)
+    if (!blob) {
+      throw validationError("Uploaded file not found", "storageId")
+    }
+
     if (ctx.user.avatar) {
       await ctx.storage.delete(ctx.user.avatar)
     }

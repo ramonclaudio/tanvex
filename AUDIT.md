@@ -309,7 +309,7 @@ A clean `bun install` fixed it. Not a repo bug.
 - File: `convex/users.ts:169`. `v.id("_storage")` validates shape only. A bad id patches
   through and `getUrl` returns null downstream. Self-inflicted only (ids are
   unguessable). Fix: existence check via `ctx.db.system.get` plus `validationError`.
-  Status: open.
+  Status: fixed, covered by a Phase 3 test.
 
 ### N2. Missing `returns` validators
 
