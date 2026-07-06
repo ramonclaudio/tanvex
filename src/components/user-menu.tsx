@@ -11,6 +11,7 @@ import { buttonVariants } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -75,23 +76,26 @@ function AuthedMenu() {
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="min-w-52">
-        <DropdownMenuLabel className="flex flex-col gap-0.5">
-          <span className="truncate text-sm font-medium text-foreground">{label}</span>
-          {handle ? (
-            <span className="truncate text-xs text-muted-foreground">@{handle}</span>
-          ) : user?.email ? (
-            <span className="truncate text-xs text-muted-foreground">{user.email}</span>
-          ) : null}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem render={<Link to="/profile" />}>
-          <HugeiconsIcon icon={UserIcon} strokeWidth={2} />
-          Profile
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleSignOut}>
-          <HugeiconsIcon icon={LogoutSquare01Icon} strokeWidth={2} />
-          Sign out
-        </DropdownMenuItem>
+        {/* GroupLabel requires an enclosing Group (Base UI context). */}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="flex flex-col gap-0.5">
+            <span className="truncate text-sm font-medium text-foreground">{label}</span>
+            {handle ? (
+              <span className="truncate text-xs text-muted-foreground">@{handle}</span>
+            ) : user?.email ? (
+              <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+            ) : null}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem render={<Link to="/profile" />}>
+            <HugeiconsIcon icon={UserIcon} strokeWidth={2} />
+            Profile
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleSignOut}>
+            <HugeiconsIcon icon={LogoutSquare01Icon} strokeWidth={2} />
+            Sign out
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   )
