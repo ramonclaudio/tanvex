@@ -140,6 +140,13 @@
   }
 }
 
+/* Applied to Sonner toasts via toastOptions in src/components/ui/sonner.tsx. */
+@layer components {
+  .cn-toast {
+    border-radius: var(--radius-2xl);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -224,8 +224,8 @@ Heavy rounding is the system's loudest visual choice. The radius ladder, generat
 - `rounded-sm` 6px → checkbox, kbd
 - `rounded-md` 8px → small chips
 - `rounded-lg` 10px → field labels, info badges
-- `rounded-xl` 14px → toast, hover-card on small surfaces
-- `rounded-2xl` 18px → menu items, secondary buttons inside groups
+- `rounded-xl` 14px → hover-card on small surfaces
+- `rounded-2xl` 18px → menu items, secondary buttons inside groups, toasts
 - `rounded-3xl` 22px → inputs, popovers, cards, dropdown surfaces, hover cards
 - `rounded-4xl` 26px → buttons, input groups, large pills
 - `rounded-full` → avatars, icon buttons, badges, switches

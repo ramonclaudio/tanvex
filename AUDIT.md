@@ -231,7 +231,7 @@ A clean `bun install` fixed it. Not a repo bug.
   Three values, one of them real.
 - Fix: define `.cn-toast { border-radius: var(--radius-2xl) }` in `styles.css` and align
   the ladder line.
-- Status: open
+- Status: fixed. Design lint unchanged (0 errors, same 9 pre-existing warnings as HEAD).
 
 ### S16. `vite-env.d.ts` types env vars that never exist on `import.meta.env`
 
