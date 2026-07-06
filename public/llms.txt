@@ -6,7 +6,7 @@
 
 - TanStack Start + TanStack Router (file-based routing, SSR via Nitro 3)
 - Convex 1.37 backend with `@convex-dev/better-auth`, `@convex-dev/rate-limiter`, `@convex-dev/resend`
-- Better Auth 1.6.9 with the `emailOTP` and `username` plugins
+- Better Auth 1.6 with the `emailOTP` and `username` plugins
 - Vite 8 (Rolldown bundler, Oxc toolchain)
 - React 19 with the automatic JSX transform
 - TypeScript 6, strict + verbatimModuleSyntax

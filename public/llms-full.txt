@@ -32,7 +32,7 @@ Unlike other TanStack + shadcn starters, this one ships:
 
 - **TanStack Start** + **TanStack Router**: file-based routing, SSR via Nitro 3
 - **Convex 1.37**: backend, real-time queries, storage, HTTP actions
-- **Better Auth 1.6.9**: sessions, email + password, `emailOTP` + `username` plugins, JWKS for Convex JWT auth
+- **Better Auth 1.6**: sessions, email + password, `emailOTP` + `username` plugins, JWKS for Convex JWT auth
 - **`@convex-dev/better-auth`**: Convex adapter for Better Auth, SSR-safe
 - **`@convex-dev/resend`**: Resend component with webhook handler + delivery-event persistence
 - **`@convex-dev/rate-limiter`**: token-bucket limiter for API endpoints and user actions
@@ -105,6 +105,7 @@ Hosted on Convex at `https://<project>.convex.site`, CORS-locked to `SITE_URL`.
 - `src/routes/api/auth/$.ts`: Better Auth proxy for TanStack Start
 - `src/lib/auth-client.ts`: Better Auth client with `convexClient`, `usernameClient`, `emailOTPClient`
 - `src/lib/auth-server.ts`: server-side auth helpers (`fetchAuthQuery`, `getToken`)
+- `src/lib/convex-auth.tsx`: Better Auth to Convex provider bridge (stable auth state, SSR initial token)
 - `src/lib/site.ts`: SITE_URL, SITE_NAME, SITE_TITLE, SITE_DESCRIPTION, AUTHOR_*, REPO_URL, SITE_LOCALE, SITE_OG_IMAGE_ALT
 - `src/lib/seo.ts`: emits og, twitter, description tags (absolute URLs for og:image); canonical links + JSON-LD live in the route heads
 - `src/components/theme-provider.tsx`: light/dark/system with no-flash script
