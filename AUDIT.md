@@ -122,7 +122,8 @@ A clean `bun install` fixed it. Not a repo bug.
   `Retry-After: (retryAt - Date.now()) / 1000`, which yields a large negative number on
   every 429. The JSON body's `retryAt` is equally wrong.
 - Fix: return `retryAt: Date.now() + retryAfter` so the downstream math holds.
-- Status: open
+- Status: fixed. Covered by a convex-test case in Phase 3 (retryAt is in the future on
+  a 429).
 
 ### S7. OTP sign-in silently creates accounts
 

@@ -32,9 +32,10 @@ export const checkApiRateLimit = internalMutation({
   }),
   handler: async (ctx, args) => {
     const result = await consumeLimit(ctx, args.name, args.key)
+    // The component's retryAfter is a duration (ms until retry), not a timestamp.
     return {
       ok: result.ok,
-      retryAt: result.retryAfter ?? Date.now(),
+      retryAt: Date.now() + (result.retryAfter ?? 0),
     }
   },
 })
