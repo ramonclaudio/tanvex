@@ -51,7 +51,8 @@ A clean `bun install` fixed it. Not a repo bug.
   `better-auth@1.6.9`. The npm CI leg and every non-bun fork are broken today.
 - Fix: pin `@convex-dev/better-auth` to exactly `0.12.2` (its peer range `>=1.6.9 <1.7.0`
   matches the pin). A patched dependency's tightly-coupled adapter must not float.
-- Status: open
+- Status: fixed. Clean `npm install` plus all five gates verified green in a scratch
+  clone with the pin.
 
 ## Should-fix
 
