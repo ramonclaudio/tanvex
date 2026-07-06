@@ -10,6 +10,9 @@ on:
     # so registry drift can break installs with zero commits here. This catches it.
     - cron: "17 6 * * 1"
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -18,12 +21,13 @@ jobs:
   verify:
     name: ${{ matrix.pm }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         pm: [bun, pnpm, npm, yarn]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Bun
         if: matrix.pm == 'bun'
@@ -33,7 +37,7 @@ jobs:
 
       - name: Setup Node
         if: matrix.pm != 'bun'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
 
