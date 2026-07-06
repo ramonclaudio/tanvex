@@ -9,12 +9,12 @@ import { v } from "convex/values"
 // Identity fields (name, email, username, image) come from the Better Auth user and are
 // merged at read time in convex/auth.ts safeGetAuthenticatedUser.
 
-// Reusable field validators for the app users table.
+// Reusable field validators for the app users table. Creation time is the
+// system field _creationTime; only the update time needs its own column.
 export const userFields = {
   authId: v.string(), // FK to the Better Auth user id (indexed for efficient lookup)
   bio: v.optional(v.string()),
   avatar: v.optional(v.id("_storage")), // Convex storage id for uploaded avatars
-  createdAt: v.number(),
   updatedAt: v.number(),
 }
 
@@ -24,7 +24,6 @@ export default defineSchema({
     authId: userFields.authId,
     bio: userFields.bio,
     avatar: userFields.avatar,
-    createdAt: userFields.createdAt,
     updatedAt: userFields.updatedAt,
   }).index("authId", ["authId"]),
 })

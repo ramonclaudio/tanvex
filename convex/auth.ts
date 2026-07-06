@@ -68,7 +68,6 @@ export const authComponent = createClient<DataModel>(components.betterAuth, {
         // Better Auth user record, not here.
         await ctx.db.insert("users", {
           authId: authUser._id,
-          createdAt: Date.now(),
           updatedAt: Date.now(),
         })
       },
@@ -224,7 +223,6 @@ export const authUserValidator = v.object({
   authId: v.string(),
   bio: v.optional(v.string()),
   avatar: v.optional(v.id("_storage")),
-  createdAt: v.number(),
   updatedAt: v.number(),
   authUserId: v.string(),
   email: v.string(),

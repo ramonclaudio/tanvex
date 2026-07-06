@@ -90,7 +90,7 @@ A clean `bun install` fixed it. Not a repo bug.
   the profile renders it.
 - Fix: drop `createdAt` from the schema, the trigger insert, and `authUserValidator`.
   Existing deployments need a one-off unset backfill before pushing the narrowed schema.
-- Status: open
+- Status: fixed. Zero remaining reads confirmed by grep, typecheck green.
 
 ### S4. `generateAvatarUploadUrl` has no rate limit
 
