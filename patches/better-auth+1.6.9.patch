@@ -129,37 +129,3 @@ index 6cdd89b..ae59301 100644
            user: {
              id: string;
              createdAt: Date;
-diff --git a/package.json b/package.json
-index 52c9ec2..ec78dde 100644
---- a/package.json
-+++ b/package.json
-@@ -479,6 +479,13 @@
-     }
-   },
-   "dependencies": {
-+    "@better-auth/core": "https://pkg.pr.new/better-auth/better-auth/@better-auth/core@2612e4f",
-+    "@better-auth/drizzle-adapter": "https://pkg.pr.new/better-auth/better-auth/@better-auth/drizzle-adapter@2612e4f",
-+    "@better-auth/kysely-adapter": "https://pkg.pr.new/better-auth/better-auth/@better-auth/kysely-adapter@2612e4f",
-+    "@better-auth/memory-adapter": "https://pkg.pr.new/better-auth/better-auth/@better-auth/memory-adapter@2612e4f",
-+    "@better-auth/mongo-adapter": "https://pkg.pr.new/better-auth/better-auth/@better-auth/mongo-adapter@2612e4f",
-+    "@better-auth/prisma-adapter": "https://pkg.pr.new/better-auth/better-auth/@better-auth/prisma-adapter@2612e4f",
-+    "@better-auth/telemetry": "https://pkg.pr.new/better-auth/better-auth/@better-auth/telemetry@2612e4f",
-     "@better-auth/utils": "0.4.0",
-     "@better-fetch/fetch": "1.1.21",
-     "@noble/ciphers": "^2.1.1",
-@@ -488,14 +495,7 @@
-     "jose": "^6.1.3",
-     "kysely": "^0.28.14",
-     "nanostores": "^1.1.1",
--    "zod": "^4.3.6",
--    "@better-auth/core": "1.6.9",
--    "@better-auth/drizzle-adapter": "1.6.9",
--    "@better-auth/kysely-adapter": "1.6.9",
--    "@better-auth/memory-adapter": "1.6.9",
--    "@better-auth/mongo-adapter": "1.6.9",
--    "@better-auth/prisma-adapter": "1.6.9",
--    "@better-auth/telemetry": "1.6.9"
-+    "zod": "^4.3.6"
-   },
-   "devDependencies": {
-     "@lynx-js/react": "^0.116.3",

@@ -155,7 +155,8 @@ A clean `bun install` fixed it. Not a repo bug.
   resolution, but it makes `npm ls` report the tree as invalid and implies a snapshot
   dependency that does not exist.
 - Fix: drop the `package.json` hunk from the patch.
-- Status: open
+- Status: fixed. Patch reapplies cleanly to a fresh better-auth install, the reapply is
+  idempotent, and `npm ls better-auth` reports a valid tree.
 
 ### S10. The hugeicons patch mutates the wrong package for a types-only problem
 
