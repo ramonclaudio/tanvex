@@ -103,9 +103,9 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
       // When `emailOtp.verifyEmail` (or the link-based verify endpoint)
       // succeeds, Better Auth creates a session and sets the cookie inline
       // instead of returning { token: null } and forcing the user to sign in
-      // manually. Verified in packages/better-auth/src/plugins/email-otp/routes.ts:520
-      // in the local Better Auth source — the flag is read by the emailOTP
-      // plugin even though it lives on the top-level emailVerification config.
+      // manually. The emailOTP plugin reads this flag even though it lives on
+      // the top-level emailVerification config (verified against the 1.6.23
+      // dist, plugins/email-otp/routes.mjs).
       autoSignInAfterVerification: true,
     },
     session: {

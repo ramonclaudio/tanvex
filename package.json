@@ -62,7 +62,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
-    "@convex-dev/better-auth": "0.12.2",
+    "@convex-dev/better-auth": "^0.12.5",
     "@convex-dev/rate-limiter": "^0.3.2",
     "@convex-dev/react-query": "0.1.0",
     "@convex-dev/resend": "^0.2.3",
@@ -74,7 +74,7 @@
     "@tanstack/react-router": "^1.169.1",
     "@tanstack/react-router-ssr-query": "^1.166.12",
     "@tanstack/react-start": "^1.167.63",
-    "better-auth": "1.6.9",
+    "better-auth": "^1.6.23",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "convex": "^1.37.0",

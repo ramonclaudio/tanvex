@@ -1,4 +1,3 @@
-import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react"
 import type { ConvexQueryClient } from "@convex-dev/react-query"
 import Home01Icon from "@hugeicons/core-free-icons/Home01Icon"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -21,8 +20,8 @@ import { buttonVariants } from "@/components/ui/button"
 import { Toaster } from "@/components/ui/sonner"
 import { UserMenu } from "@/components/user-menu"
 import { WebVitals } from "@/components/web-vitals"
-import { authClient } from "@/lib/auth-client"
 import { getToken } from "@/lib/auth-server"
+import { BetterAuthConvexProvider } from "@/lib/convex-auth"
 import { seo } from "@/lib/seo"
 import {
   AUTHOR_GITHUB,
@@ -151,9 +150,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         >
           Skip to content
         </a>
-        <ConvexBetterAuthProvider
+        <BetterAuthConvexProvider
           client={context.convexQueryClient.convexClient}
-          authClient={authClient}
           initialToken={context.token}
         >
           <ThemeProvider>
@@ -184,7 +182,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               </Suspense>
             ) : null}
           </ThemeProvider>
-        </ConvexBetterAuthProvider>
+        </BetterAuthConvexProvider>
         <Scripts />
       </body>
     </html>

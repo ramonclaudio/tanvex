@@ -232,6 +232,7 @@ Anywhere Nitro runs (Node, Bun, AWS Lambda, Deno Deploy, etc.): set `NITRO_PRESE
     ├── lib/
     │   ├── auth-client.ts             # Better Auth client
     │   ├── auth-server.ts             # server-side auth helpers
+    │   ├── convex-auth.tsx            # Better Auth → Convex provider bridge
     │   ├── seo.ts                     # head meta helper
     │   ├── site.ts                    # SITE_URL, SITE_NAME, SITE_TITLE, AUTHOR_*
     │   └── utils.ts                   # cn() class merger
