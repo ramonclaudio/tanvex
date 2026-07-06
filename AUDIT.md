@@ -355,7 +355,7 @@ A clean `bun install` fixed it. Not a repo bug.
 
 - File: `DESIGN.md:246,374`. The avatar fallback is documented as "user initial" but
   renders a glyph. ThemeToggle is documented as "cycling" but is a menu. Fix: match the
-  docs to the code and re-run the design lint. Status: open.
+  docs to the code and re-run the design lint. Status: fixed, lint unchanged (0 errors).
 
 ### N9. `oxlint-tsgolint` caret-ranged while oxlint and oxfmt are exact
 
