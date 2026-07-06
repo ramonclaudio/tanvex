@@ -260,7 +260,8 @@ A clean `bun install` fixed it. Not a repo bug.
   footer author links repeat the literals. A forker following README's customize section
   updates `site.ts` and still ships the author's URLs on the landing page.
 - Fix: import `REPO_URL` and `AUTHOR_URL` from `@/lib/site` and derive the clone command.
-- Status: open
+- Status: fixed. The clone command, footer author link, and repo slug all derive from
+  `site.ts` now.
 
 ### S19. README drift (multiple, confirmed against source)
 

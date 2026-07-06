@@ -33,7 +33,14 @@ import {
 import { Kbd } from "@/components/ui/kbd"
 import { Separator } from "@/components/ui/separator"
 import { seo } from "@/lib/seo"
-import { SITE_DESCRIPTION, SITE_TITLE, SITE_URL } from "@/lib/site"
+import {
+  AUTHOR_NAME,
+  AUTHOR_URL,
+  REPO_URL,
+  SITE_DESCRIPTION,
+  SITE_TITLE,
+  SITE_URL,
+} from "@/lib/site"
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -48,8 +55,8 @@ export const Route = createFileRoute("/")({
   component: Home,
 })
 
-const INSTALL_CMD = "git clone https://github.com/ramonclaudio/tanvex.git my-app"
-const REPO_URL = "https://github.com/ramonclaudio/tanvex"
+const INSTALL_CMD = `git clone ${REPO_URL}.git my-app`
+const REPO_SLUG = REPO_URL.replace("https://github.com/", "")
 
 const stack = [
   {
@@ -271,12 +278,12 @@ function Home() {
         <span>
           MIT. Built by{" "}
           <a
-            href="https://github.com/ramonclaudio"
+            href={AUTHOR_URL}
             target="_blank"
             rel="noreferrer"
             className="text-foreground underline-offset-4 hover:underline"
           >
-            @ramonclaudio
+            {AUTHOR_NAME}
           </a>
           .
         </span>
@@ -287,7 +294,7 @@ function Home() {
           className="inline-flex items-center gap-1.5 text-foreground underline-offset-4 hover:underline"
         >
           <HugeiconsIcon icon={GithubIcon} className="size-4" />
-          ramonclaudio/tanvex
+          {REPO_SLUG}
         </a>
       </footer>
     </div>
