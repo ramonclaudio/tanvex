@@ -349,7 +349,7 @@ A clean `bun install` fixed it. Not a repo bug.
 ### N7. `"use client"` in `field.tsx`
 
 - File: `src/components/ui/field.tsx:1`. An RSC directive, inert in TanStack Start, the
-  only file with it. Fix: drop the line. Status: open.
+  only file with it. Fix: drop the line. Status: fixed.
 
 ### N8. DESIGN.md component notes drift from the implementation
 
